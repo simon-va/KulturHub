@@ -1,5 +1,5 @@
+using KulturHub.Application.Features.WeeklyPost;
 using KulturHub.Application.Ports;
-using KulturHub.Domain.Models;
 using SkiaSharp;
 
 namespace KulturHub.Infrastructure.ImageGeneration;

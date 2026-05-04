@@ -33,9 +33,7 @@ public class InstagramTokenService(
         {
             var (newAccessToken, newExpiresAt) = await tokenRefresher.RefreshAsync(token.AccessToken, cancellationToken);
 
-            token.AccessToken = newAccessToken;
-            token.ExpiresAt = newExpiresAt;
-            token.LastRefreshedAt = DateTime.UtcNow;
+            token.Refresh(newAccessToken, newExpiresAt);
 
             await tokenRepository.UpdateTokenAsync(token);
 

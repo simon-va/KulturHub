@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using KulturHub.Domain.Exceptions;
 using KulturHub.Application.Ports;
 using KulturHub.Domain.Interfaces;
 using Microsoft.Extensions.Logging;

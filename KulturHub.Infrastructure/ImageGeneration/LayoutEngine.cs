@@ -1,4 +1,4 @@
-using KulturHub.Domain.Models;
+using KulturHub.Application.Features.WeeklyPost;
 
 namespace KulturHub.Infrastructure.ImageGeneration;
 

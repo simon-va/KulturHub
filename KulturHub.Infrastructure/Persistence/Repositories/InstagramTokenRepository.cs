@@ -18,7 +18,13 @@ public class InstagramTokenRepository(IDbConnectionFactory connectionFactory) : 
             """;
 
         using var connection = connectionFactory.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<InstagramToken>(sql);
+        var row = await connection.QuerySingleOrDefaultAsync<InstagramTokenRow>(sql);
+        if (row is null)
+            return null;
+
+        return InstagramToken.Reconstitute(
+            row.Id, row.AccessToken, row.InstagramUserId,
+            row.ExpiresAt, row.LastRefreshedAt, row.CreatedAt);
     }
 
     public async Task UpdateTokenAsync(InstagramToken token)
@@ -59,4 +65,8 @@ public class InstagramTokenRepository(IDbConnectionFactory connectionFactory) : 
             token.CreatedAt
         });
     }
+
+    private sealed record InstagramTokenRow(
+        Guid Id, string AccessToken, string InstagramUserId,
+        DateTime ExpiresAt, DateTime LastRefreshedAt, DateTime CreatedAt);
 }

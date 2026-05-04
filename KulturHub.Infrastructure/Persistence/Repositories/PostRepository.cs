@@ -1,5 +1,6 @@
 using Dapper;
 using KulturHub.Domain.Entities;
+using KulturHub.Domain.Enums;
 using KulturHub.Domain.Interfaces;
 
 namespace KulturHub.Infrastructure.Persistence.Repositories;
@@ -77,7 +78,7 @@ public class PostRepository(IDbConnectionFactory connectionFactory) : IPostRepos
 
     public async Task<Post?> GetByIdAsync(Guid id)
     {
-        const string selectPost ="""
+        const string selectPost = """
             SELECT id, type, status, caption,
                    error_message      AS ErrorMessage,
                    created_at         AS CreatedAt,
@@ -98,13 +99,21 @@ public class PostRepository(IDbConnectionFactory connectionFactory) : IPostRepos
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
 
-        var post = await connection.QuerySingleOrDefaultAsync<Post>(selectPost, new { Id = id });
-        if (post is null)
+        var row = await connection.QuerySingleOrDefaultAsync<PostRow>(selectPost, new { Id = id });
+        if (row is null)
             return null;
 
+        var post = Post.Reconstitute(
+            row.Id, (PostType)row.Type, (PostStatus)row.Status,
+            row.Caption, row.ErrorMessage, row.CreatedAt, row.PublishedAt, row.InstagramMediaId);
+
         var images = await connection.QueryAsync<PostImage>(selectImages, new { Id = id });
-        post.Images.AddRange(images);
+        post.AddImages(images);
 
         return post;
     }
+
+    private sealed record PostRow(
+        Guid Id, int Type, int Status, string Caption,
+        string? ErrorMessage, DateTime CreatedAt, DateTime? PublishedAt, string? InstagramMediaId);
 }

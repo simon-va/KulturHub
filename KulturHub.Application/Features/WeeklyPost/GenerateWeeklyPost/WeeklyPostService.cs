@@ -43,14 +43,7 @@ public class WeeklyPostService(
                 var fileName = $"weekly_{weekStart:yyyyMMdd}_{i}.png";
                 var url = await storageService.UploadImageAsync(imageBytes[i], fileName);
 
-                post.AddImage(new PostImage
-                {
-                    Id = Guid.NewGuid(),
-                    PostId = post.Id,
-                    StorageUrl = url,
-                    SortOrder = i,
-                    CreatedAt = DateTime.UtcNow
-                });
+                post.AddImage(PostImage.Create(post.Id, url, i));
             }
 
             await postRepository.CreateAsync(post);

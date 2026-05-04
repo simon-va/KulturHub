@@ -4,7 +4,7 @@ using KulturHub.Domain.Entities;
 using KulturHub.Domain.Enums;
 using KulturHub.Application.Ports;
 using KulturHub.Domain.Interfaces;
-using KulturHub.Domain.Models;
+using KulturHub.Application.Features.WeeklyPost;
 using Microsoft.Extensions.Logging;
 using Moq;
 

@@ -1,4 +1,4 @@
-namespace KulturHub.Domain.Models;
+namespace KulturHub.Application.Features.WeeklyPost;
 
 public class DayGroup
 {

@@ -3,8 +3,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using KulturHub.Application.Features.WeeklyPost;
 using KulturHub.Application.Ports;
-using KulturHub.Domain.Models;
 using Microsoft.Extensions.Configuration;
 
 namespace KulturHub.Infrastructure.ExternalApis;
