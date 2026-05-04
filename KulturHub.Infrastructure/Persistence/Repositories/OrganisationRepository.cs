@@ -78,4 +78,22 @@ public class OrganisationRepository(IDbConnectionFactory connectionFactory) : IO
         var result = await connection.QueryFirstOrDefaultAsync<int?>(sql, new { OrganisationId = organisationId, UserId = userId });
         return result.HasValue;
     }
+
+    public async Task<IEnumerable<Organisation>> GetByUserIdAsync(Guid userId)
+    {
+        const string sql = """
+            SELECT o.id, o.name
+            FROM organisations o
+            INNER JOIN organisation_members om ON om.organisation_id = o.id
+            WHERE om.user_id = @UserId
+            ORDER BY o.name
+            """;
+
+        using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync();
+        var rows = await connection.QueryAsync<OrganisationRow>(sql, new { UserId = userId });
+        return rows.Select(r => Organisation.Reconstitute(r.Id, r.Name));
+    }
+
+    private sealed record OrganisationRow(Guid Id, string Name);
 }

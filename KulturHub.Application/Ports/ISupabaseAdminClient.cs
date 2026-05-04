@@ -1,4 +1,4 @@
-namespace KulturHub.Domain.Interfaces;
+namespace KulturHub.Application.Ports;
 
 public interface ISupabaseAdminClient
 {

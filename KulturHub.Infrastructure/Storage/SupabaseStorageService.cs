@@ -1,4 +1,4 @@
-using KulturHub.Domain.Interfaces;
+using KulturHub.Application.Ports;
 
 namespace KulturHub.Infrastructure.Storage;
 

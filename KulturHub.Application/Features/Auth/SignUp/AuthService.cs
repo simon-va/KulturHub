@@ -1,6 +1,7 @@
 using ErrorOr;
 using FluentValidation;
 using KulturHub.Application.Errors;
+using KulturHub.Application.Ports;
 using KulturHub.Domain.Entities;
 using KulturHub.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace KulturHub.Application.Features.Auth.SignUp;
 
 public class AuthService(
-    Supabase.Client supabaseClient,
+    IAuthProvider authProvider,
     IAuthRepository authRepository,
     ISupabaseAdminClient supabaseAdminClient,
     IValidator<SignUpInput> validator,
@@ -18,23 +19,16 @@ public class AuthService(
     {
         var validationResult = await validator.ValidateAsync(input);
         if (!validationResult.IsValid)
-            throw new ValidationException(validationResult.Errors);
+            return validationResult.Errors
+                .Select(e => Error.Validation(e.PropertyName, e.ErrorMessage))
+                .ToList();
 
-        Supabase.Gotrue.Session? session;
-        try
-        {
-            session = await supabaseClient.Auth.SignUp(input.Email, input.Password);
-        }
-        catch (Exception ex) when (ex.Message.Contains("already registered", StringComparison.OrdinalIgnoreCase))
-        {
-            return AuthErrors.AlreadyRegistered;
-        }
+        var sessionResult = await authProvider.SignUpAsync(input.Email, input.Password);
+        if (sessionResult.IsError)
+            return sessionResult.Errors;
 
-        if (session?.User?.Id is null || session.AccessToken is null || session.RefreshToken is null)
-            return AuthErrors.SignUpFailed;
-
-        var userId = Guid.Parse(session.User.Id);
-        var user = User.Create(userId, input.FirstName, input.LastName);
+        var session = sessionResult.Value;
+        var user = User.Create(session.UserId, input.FirstName, input.LastName);
 
         try
         {
@@ -42,11 +36,11 @@ public class AuthService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to insert user {UserId}. Rolling back auth user.", userId);
-            await supabaseAdminClient.DeleteUserAsync(userId);
+            logger.LogError(ex, "Failed to insert user {UserId}. Rolling back auth user.", session.UserId);
+            await supabaseAdminClient.DeleteUserAsync(session.UserId);
             return AuthErrors.DatabaseInsertFailed(ex.Message);
         }
 
-        return new AuthResponse(session.AccessToken, session.RefreshToken, userId, input.FirstName, input.LastName);
+        return new AuthResponse(session.AccessToken, session.RefreshToken, session.UserId, input.FirstName, input.LastName);
     }
 }

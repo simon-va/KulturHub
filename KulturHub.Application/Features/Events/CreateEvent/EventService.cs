@@ -3,6 +3,7 @@ using FluentValidation;
 using KulturHub.Application.Errors;
 using KulturHub.Domain.Entities;
 using KulturHub.Domain.Enums;
+using KulturHub.Application.Ports;
 using KulturHub.Domain.Interfaces;
 
 namespace KulturHub.Application.Features.Events.CreateEvent;
@@ -17,7 +18,9 @@ public class EventService(
     {
         var validationResult = await validator.ValidateAsync(input);
         if (!validationResult.IsValid)
-            throw new ValidationException(validationResult.Errors);
+            return validationResult.Errors
+                .Select(e => Error.Validation(e.PropertyName, e.ErrorMessage))
+                .ToList();
 
         var isMember = await organisationRepository.IsMemberAsync(input.OrganisationId, input.UserId);
         if (!isMember)

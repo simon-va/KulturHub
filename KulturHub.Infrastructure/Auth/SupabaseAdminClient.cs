@@ -1,5 +1,5 @@
 using System.Net.Http.Headers;
-using KulturHub.Domain.Interfaces;
+using KulturHub.Application.Ports;
 using Microsoft.Extensions.Configuration;
 
 namespace KulturHub.Infrastructure.Auth;

@@ -1,4 +1,3 @@
-using FluentValidation;
 using KulturHub.Api.Endpoints;
 using KulturHub.Application;
 using KulturHub.Infrastructure;
@@ -38,30 +37,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler(errApp =>
 {
-    errApp.Run(async context =>
+    errApp.Run(context =>
     {
-        var ex = context.Features
-            .Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
-
-        if (ex is ValidationException validationEx)
-        {
-            var errors = validationEx.Errors
-                .GroupBy(e => e.PropertyName)
-                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(new
-            {
-                title = "One or more validation errors occurred.",
-                status = 400,
-                errors
-            });
-        }
-        else
-        {
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        }
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        return Task.CompletedTask;
     });
 });
 

@@ -10,4 +10,10 @@ public class Organisation
         Id = Guid.NewGuid(),
         Name = name,
     };
+
+    public static Organisation Reconstitute(Guid id, string name) => new()
+    {
+        Id = id,
+        Name = name,
+    };
 }

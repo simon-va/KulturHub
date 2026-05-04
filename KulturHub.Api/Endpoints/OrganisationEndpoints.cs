@@ -11,6 +11,13 @@ public static class OrganisationEndpoints
 {
     public static void MapOrganisationEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/organisations", async (ClaimsPrincipal user, IOrganisationService organisationService) =>
+        {
+            var userId = user.GetUserId();
+            var organisations = await organisationService.GetByUserIdAsync(userId);
+            return Results.Ok(organisations);
+        }).RequireAuthorization();
+
         app.MapPost("/organisations", async (CreateOrganisationRequest req, ClaimsPrincipal user, IOrganisationService organisationService) =>
         {
             var userId = user.GetUserId();
@@ -24,7 +31,7 @@ public static class OrganisationEndpoints
         app.MapPut("/organisations/{id:guid}", async (Guid id, UpdateOrganisationRequest req, ClaimsPrincipal user, IOrganisationService organisationService) =>
         {
             var userId = user.GetUserId();
-            var result = await organisationService.UpdateAsync(new UpdateOrganisationInput(id, req.Name, userId));
+            var result = await organisationService.UpdateAsync(id, new UpdateOrganisationInput(req.Name, userId));
 
             return result.Match(
                 _ => Results.NoContent(),

@@ -1,3 +1,3 @@
 namespace KulturHub.Application.Features.Organisations.UpdateOrganisation;
 
-public record UpdateOrganisationInput(Guid Id, string Name, Guid UserId);
+public record UpdateOrganisationInput(string Name, Guid UserId);

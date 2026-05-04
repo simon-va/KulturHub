@@ -1,6 +1,6 @@
 using KulturHub.Domain.Models;
 
-namespace KulturHub.Domain.Interfaces;
+namespace KulturHub.Application.Ports;
 
 public interface IChaynsApiClient
 {
