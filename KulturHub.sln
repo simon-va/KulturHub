@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KulturHub.Domain", "KulturHub.Domain\KulturHub.Domain.csproj", "{2D8053A3-FBDA-441A-8EAA-D28F77D74890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KulturHub.Application", "KulturHub.Application\KulturHub.Application.csproj", "{20E60211-0AA4-40E5-99E4-F3BDECFEC89C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KulturHub.Infrastructure", "KulturHub.Infrastructure\KulturHub.Infrastructure.csproj", "{8C17424B-2ED5-475E-940B-D5C7FACB2C43}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KulturHub.Api", "KulturHub.Api\KulturHub.Api.csproj", "{E2B9BC4F-408F-4853-B324-55C7674CADB3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KulturHub.Worker", "KulturHub.Worker\KulturHub.Worker.csproj", "{40A08F87-6F10-49C4-BCCB-A28809E5575A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KulturHub.UnitTests", "KulturHub.UnitTests\KulturHub.UnitTests.csproj", "{13E29ED8-A0EA-46CA-8408-8C79F56B79E5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2D8053A3-FBDA-441A-8EAA-D28F77D74890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D8053A3-FBDA-441A-8EAA-D28F77D74890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D8053A3-FBDA-441A-8EAA-D28F77D74890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D8053A3-FBDA-441A-8EAA-D28F77D74890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{20E60211-0AA4-40E5-99E4-F3BDECFEC89C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20E60211-0AA4-40E5-99E4-F3BDECFEC89C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20E60211-0AA4-40E5-99E4-F3BDECFEC89C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20E60211-0AA4-40E5-99E4-F3BDECFEC89C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C17424B-2ED5-475E-940B-D5C7FACB2C43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C17424B-2ED5-475E-940B-D5C7FACB2C43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C17424B-2ED5-475E-940B-D5C7FACB2C43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C17424B-2ED5-475E-940B-D5C7FACB2C43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2B9BC4F-408F-4853-B324-55C7674CADB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2B9BC4F-408F-4853-B324-55C7674CADB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2B9BC4F-408F-4853-B324-55C7674CADB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2B9BC4F-408F-4853-B324-55C7674CADB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40A08F87-6F10-49C4-BCCB-A28809E5575A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40A08F87-6F10-49C4-BCCB-A28809E5575A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40A08F87-6F10-49C4-BCCB-A28809E5575A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40A08F87-6F10-49C4-BCCB-A28809E5575A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13E29ED8-A0EA-46CA-8408-8C79F56B79E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13E29ED8-A0EA-46CA-8408-8C79F56B79E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13E29ED8-A0EA-46CA-8408-8C79F56B79E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13E29ED8-A0EA-46CA-8408-8C79F56B79E5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

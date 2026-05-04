@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>dotnet-KulturHub.Worker-27f0ab40-59ae-4fda-a3a9-d903fa331969</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ErrorOr" Version="2.0.1" />
+        <PackageReference Include="MediatR" Version="14.1.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.6" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\KulturHub.Application\KulturHub.Application.csproj" />
+      <ProjectReference Include="..\KulturHub.Infrastructure\KulturHub.Infrastructure.csproj" />
+    </ItemGroup>
+</Project>

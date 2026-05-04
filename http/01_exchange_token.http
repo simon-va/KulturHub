@@ -1,0 +1,17 @@
+### Short-Lived Token gegen Long-Lived Token tauschen
+# Voraussetzung: Short-Lived Token aus dem Meta Developer Dashboard
+
+@client_secret = <meta_app_client_secret>
+@short_lived_token = <instagram_user_token>
+
+GET https://graph.instagram.com/access_token
+  ?grant_type=ig_exchange_token
+  &client_secret={{client_secret}}
+  &access_token={{short_lived_token}}
+
+# Response enthält:
+# {
+#   "access_token": "...",   ← das ist der Long-Lived Token (~60 Tage gültig)
+#   "token_type": "bearer",
+#   "expires_in": 5183944   ← Sekunden bis zum Ablauf
+# }

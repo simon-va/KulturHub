@@ -1,0 +1,15 @@
+### Token manuell refreshen (zum Testen)
+# Funktioniert nur, wenn der Token noch nicht abgelaufen ist
+
+@current_token = <instagram_user_token>
+
+GET https://graph.instagram.com/refresh_access_token
+  ?grant_type=ig_refresh_token
+  &access_token={{current_token}}
+
+# Response enthält:
+# {
+#   "access_token": "...",   ← neuer Long-Lived Token
+#   "token_type": "bearer",
+#   "expires_in": 5183944
+# }

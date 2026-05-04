@@ -1,0 +1,2 @@
+ALTER TABLE events ADD COLUMN status TEXT NOT NULL DEFAULT 'Draft';
+ALTER TABLE events ADD COLUMN error_message TEXT;

@@ -1,0 +1,13 @@
+@baseUrl = http://localhost:5159
+
+### Valide Anfrage – Veranstaltung erstellen
+POST {{baseUrl}}/events
+Content-Type: application/json
+
+{
+  "title": "Konzert im Park",
+  "startTime": "2026-07-01T18:00:00Z",
+  "endTime": "2026-07-01T21:00:00Z",
+  "address": "Stadtpark 1, 12345 Musterstadt",
+  "description": "Ein Open-Air-Konzert mit lokalen Bands."
+}

@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\KulturHub.Application\KulturHub.Application.csproj" />
+      <ProjectReference Include="..\KulturHub.Domain\KulturHub.Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Dapper" Version="2.1.72" />
+      <PackageReference Include="MediatR" Version="14.1.0" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
+      <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.7" />
+      <PackageReference Include="Npgsql" Version="10.0.2" />
+      <PackageReference Include="SkiaSharp" Version="3.119.2" />
+      <PackageReference Include="Supabase" Version="1.1.1" />
+    </ItemGroup>
+
+</Project>

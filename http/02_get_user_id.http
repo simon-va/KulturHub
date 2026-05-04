@@ -1,0 +1,13 @@
+### Instagram User ID abfragen
+# Voraussetzung: Long-Lived Token aus Schritt 01
+
+@long_lived_token = <instagram_user_token>
+
+GET https://graph.instagram.com/me
+  ?access_token={{long_lived_token}}
+
+# Response enthält:
+# {
+#   "id": "...",    ← das ist die Instagram User ID (für instagram_tokens-Tabelle)
+#   "name": "..."
+# }
