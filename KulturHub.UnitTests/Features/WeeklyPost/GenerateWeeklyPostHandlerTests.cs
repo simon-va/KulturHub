@@ -9,7 +9,7 @@ using Moq;
 
 namespace KulturHub.UnitTests.Features.WeeklyPost;
 
-public class GenerateWeeklyPostHandlerTests
+public class WeeklyPostServiceTests
 {
     // Rules:
     // - Returns Guid.Empty when no events are found for the week, without saving anything
@@ -22,12 +22,12 @@ public class GenerateWeeklyPostHandlerTests
     private readonly Mock<IStorageService> _storageServiceMock = new();
     private readonly Mock<IPostRepository> _postRepositoryMock = new();
     private readonly Mock<IInstagramPublisher> _instagramPublisherMock = new();
-    private readonly Mock<ILogger<GenerateWeeklyPostHandler>> _loggerMock = new();
-    private readonly GenerateWeeklyPostHandler _handler;
+    private readonly Mock<ILogger<WeeklyPostService>> _loggerMock = new();
+    private readonly WeeklyPostService _service;
 
-    public GenerateWeeklyPostHandlerTests()
+    public WeeklyPostServiceTests()
     {
-        _handler = new GenerateWeeklyPostHandler(
+        _service = new WeeklyPostService(
             _chaynsApiClientMock.Object,
             _imageGeneratorMock.Object,
             _storageServiceMock.Object,
@@ -37,65 +37,65 @@ public class GenerateWeeklyPostHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenNoEventsFound_ShouldReturnEmptyGuid()
+    public async Task GenerateWeeklyPostAsync_WhenNoEventsFound_ShouldReturnEmptyGuid()
     {
         _chaynsApiClientMock
             .Setup(x => x.GetEventsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync([]);
 
-        var result = await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        var result = await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         result.Value.Should().Be(Guid.Empty);
     }
 
     [Fact]
-    public async Task Handle_WhenNoEventsFound_ShouldNotCreatePost()
+    public async Task GenerateWeeklyPostAsync_WhenNoEventsFound_ShouldNotCreatePost()
     {
         _chaynsApiClientMock
             .Setup(x => x.GetEventsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync([]);
 
-        await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         _postRepositoryMock.Verify(x => x.CreateAsync(It.IsAny<Post>()), Times.Never);
     }
 
     [Fact]
-    public async Task Handle_WhenEventsExist_ShouldReturnPostId()
+    public async Task GenerateWeeklyPostAsync_WhenEventsExist_ShouldReturnPostId()
     {
         SetupHappyPath(imageCount: 2);
 
-        var result = await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        var result = await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         result.Value.Should().NotBe(Guid.Empty);
     }
 
     [Fact]
-    public async Task Handle_WhenEventsExist_ShouldCallCreateAsyncOnce()
+    public async Task GenerateWeeklyPostAsync_WhenEventsExist_ShouldCallCreateAsyncOnce()
     {
         SetupHappyPath(imageCount: 2);
 
-        await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         _postRepositoryMock.Verify(x => x.CreateAsync(It.IsAny<Post>()), Times.Once);
     }
 
     [Fact]
-    public async Task Handle_WhenEventsExist_ShouldCallUpdateAsyncOnce()
+    public async Task GenerateWeeklyPostAsync_WhenEventsExist_ShouldCallUpdateAsyncOnce()
     {
         SetupHappyPath(imageCount: 2);
 
-        await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         _postRepositoryMock.Verify(x => x.UpdateAsync(It.IsAny<Post>()), Times.Once);
     }
 
     [Fact]
-    public async Task Handle_WhenEventsExist_ShouldUploadImageForEachGeneratedImage()
+    public async Task GenerateWeeklyPostAsync_WhenEventsExist_ShouldUploadImageForEachGeneratedImage()
     {
         SetupHappyPath(imageCount: 3);
 
-        await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         _storageServiceMock.Verify(
             x => x.UploadImageAsync(It.IsAny<byte[]>(), It.IsAny<string>()),
@@ -103,7 +103,7 @@ public class GenerateWeeklyPostHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenImageGenerationFails_ShouldReturnError()
+    public async Task GenerateWeeklyPostAsync_WhenImageGenerationFails_ShouldReturnError()
     {
         _chaynsApiClientMock
             .Setup(x => x.GetEventsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
@@ -113,13 +113,13 @@ public class GenerateWeeklyPostHandlerTests
             .Setup(x => x.GenerateWeeklyImages(It.IsAny<List<ChaynsEvent>>(), It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .Throws(new InvalidOperationException("Render error"));
 
-        var result = await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        var result = await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         result.IsError.Should().BeTrue();
     }
 
     [Fact]
-    public async Task Handle_WhenImageGenerationFails_ShouldCreateFailedPost()
+    public async Task GenerateWeeklyPostAsync_WhenImageGenerationFails_ShouldCreateFailedPost()
     {
         _chaynsApiClientMock
             .Setup(x => x.GetEventsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
@@ -129,7 +129,7 @@ public class GenerateWeeklyPostHandlerTests
             .Setup(x => x.GenerateWeeklyImages(It.IsAny<List<ChaynsEvent>>(), It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .Throws(new InvalidOperationException("Render error"));
 
-        await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         _postRepositoryMock.Verify(
             x => x.CreateAsync(It.Is<Post>(p => p.Status == PostStatus.Failed)),
@@ -137,7 +137,7 @@ public class GenerateWeeklyPostHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenImageUploadFails_ShouldReturnError()
+    public async Task GenerateWeeklyPostAsync_WhenImageUploadFails_ShouldReturnError()
     {
         _chaynsApiClientMock
             .Setup(x => x.GetEventsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
@@ -151,13 +151,13 @@ public class GenerateWeeklyPostHandlerTests
             .Setup(x => x.UploadImageAsync(It.IsAny<byte[]>(), It.IsAny<string>()))
             .ThrowsAsync(new IOException("Storage unavailable"));
 
-        var result = await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        var result = await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         result.IsError.Should().BeTrue();
     }
 
     [Fact]
-    public async Task Handle_WhenImageUploadFails_ShouldCreateFailedPost()
+    public async Task GenerateWeeklyPostAsync_WhenImageUploadFails_ShouldCreateFailedPost()
     {
         _chaynsApiClientMock
             .Setup(x => x.GetEventsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
@@ -171,7 +171,7 @@ public class GenerateWeeklyPostHandlerTests
             .Setup(x => x.UploadImageAsync(It.IsAny<byte[]>(), It.IsAny<string>()))
             .ThrowsAsync(new IOException("Storage unavailable"));
 
-        await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         _postRepositoryMock.Verify(
             x => x.CreateAsync(It.Is<Post>(p => p.Status == PostStatus.Failed)),
@@ -179,7 +179,7 @@ public class GenerateWeeklyPostHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenInstagramPublishFails_ShouldNotReturnError()
+    public async Task GenerateWeeklyPostAsync_WhenInstagramPublishFails_ShouldNotReturnError()
     {
         SetupHappyPath(imageCount: 1);
 
@@ -187,13 +187,13 @@ public class GenerateWeeklyPostHandlerTests
             .Setup(x => x.PublishCarouselAsync(It.IsAny<List<string>>(), It.IsAny<string>()))
             .ThrowsAsync(new Exception("Instagram error"));
 
-        var result = await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        var result = await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         result.IsError.Should().BeFalse();
     }
 
     [Fact]
-    public async Task Handle_WhenInstagramPublishFails_ShouldCallUpdateAsync()
+    public async Task GenerateWeeklyPostAsync_WhenInstagramPublishFails_ShouldCallUpdateAsync()
     {
         SetupHappyPath(imageCount: 1);
 
@@ -201,13 +201,13 @@ public class GenerateWeeklyPostHandlerTests
             .Setup(x => x.PublishCarouselAsync(It.IsAny<List<string>>(), It.IsAny<string>()))
             .ThrowsAsync(new Exception("Instagram error"));
 
-        await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         _postRepositoryMock.Verify(x => x.UpdateAsync(It.IsAny<Post>()), Times.Once);
     }
 
     [Fact]
-    public async Task Handle_WhenInstagramPublishFails_ShouldReturnPostId()
+    public async Task GenerateWeeklyPostAsync_WhenInstagramPublishFails_ShouldReturnPostId()
     {
         SetupHappyPath(imageCount: 1);
 
@@ -215,7 +215,7 @@ public class GenerateWeeklyPostHandlerTests
             .Setup(x => x.PublishCarouselAsync(It.IsAny<List<string>>(), It.IsAny<string>()))
             .ThrowsAsync(new Exception("Instagram error"));
 
-        var result = await _handler.Handle(new GenerateWeeklyPostCommand(), CancellationToken.None);
+        var result = await _service.GenerateWeeklyPostAsync(CancellationToken.None);
 
         result.Value.Should().NotBe(Guid.Empty);
     }

@@ -1,5 +1,4 @@
-using KulturHub.Application.Features.Instagram.RefreshToken;
-using MediatR;
+using KulturHub.Application.Features.Instagram;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -48,11 +47,11 @@ public class TokenRefreshJob(
     private async Task RunJobAsync(CancellationToken cancellationToken)
     {
         using var scope = scopeFactory.CreateScope();
-        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+        var tokenService = scope.ServiceProvider.GetRequiredService<IInstagramTokenService>();
 
         try
         {
-            var result = await mediator.Send(new RefreshInstagramTokenCommand(), cancellationToken);
+            var result = await tokenService.RefreshTokenAsync(cancellationToken);
 
             if (result.IsError)
                 logger.LogError("TokenRefreshJob failed: {Error}", result.FirstError.Description);

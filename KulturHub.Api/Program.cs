@@ -1,15 +1,13 @@
 using FluentValidation;
 using KulturHub.Api.Requests;
 using KulturHub.Application;
+using KulturHub.Application.Features.Events;
 using KulturHub.Application.Features.Events.CreateEvent;
 using KulturHub.Infrastructure;
-using MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(CreateEventHandler).Assembly));
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -51,10 +49,11 @@ app.UseExceptionHandler(errApp =>
 
 app.UseHttpsRedirection();
 
-app.MapPost("/events", async (CreateEventRequest req, IMediator mediator) =>
+app.MapPost("/events", async (CreateEventRequest req, IEventService eventService, CancellationToken ct) =>
 {
-    var result = await mediator.Send(new CreateEventCommand(
-        req.Title, req.StartTime, req.EndTime, req.Address, req.Description));
+    var result = await eventService.CreateEventAsync(
+        new CreateEventInput(req.Title, req.StartTime, req.EndTime, req.Address, req.Description),
+        ct);
 
     return result.Match(
         id => Results.Created($"/events/{id}", new { id }),
@@ -64,4 +63,3 @@ app.MapPost("/events", async (CreateEventRequest req, IMediator mediator) =>
 });
 
 app.Run();
-

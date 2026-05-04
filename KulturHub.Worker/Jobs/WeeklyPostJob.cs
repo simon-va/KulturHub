@@ -1,5 +1,4 @@
-using KulturHub.Application.Features.WeeklyPost.GenerateWeeklyPost;
-using MediatR;
+using KulturHub.Application.Features.WeeklyPost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -46,11 +45,11 @@ public class WeeklyPostJob(
     private async Task RunJobAsync(CancellationToken cancellationToken)
     {
         using var scope = scopeFactory.CreateScope();
-        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+        var weeklyPostService = scope.ServiceProvider.GetRequiredService<IWeeklyPostService>();
 
         try
         {
-            var result = await mediator.Send(new GenerateWeeklyPostCommand(), cancellationToken);
+            var result = await weeklyPostService.GenerateWeeklyPostAsync(cancellationToken);
 
             if (result.IsError)
                 logger.LogError("WeeklyPostJob failed: {Error}", result.FirstError.Description);
@@ -72,7 +71,6 @@ public class WeeklyPostJob(
 
         var nextTrigger = now.Date.AddDays(daysUntilSunday).Add(triggerTime.ToTimeSpan());
 
-        // If today is Sunday but the trigger time has already passed, go to next Sunday
         if (nextTrigger <= now.DateTime)
             nextTrigger = nextTrigger.AddDays(7);
 

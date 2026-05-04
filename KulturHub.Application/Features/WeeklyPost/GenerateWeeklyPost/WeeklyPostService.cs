@@ -1,20 +1,19 @@
 using ErrorOr;
 using KulturHub.Domain.Entities;
 using KulturHub.Domain.Interfaces;
-using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace KulturHub.Application.Features.WeeklyPost.GenerateWeeklyPost;
 
-public class GenerateWeeklyPostHandler(
+public class WeeklyPostService(
     IChaynsApiClient chaynsApiClient,
     IImageGenerator imageGenerator,
     IStorageService storageService,
     IPostRepository postRepository,
     IInstagramPublisher instagramPublisher,
-    ILogger<GenerateWeeklyPostHandler> logger) : IRequestHandler<GenerateWeeklyPostCommand, ErrorOr<Guid>>
+    ILogger<WeeklyPostService> logger) : IWeeklyPostService
 {
-    public async Task<ErrorOr<Guid>> Handle(GenerateWeeklyPostCommand request, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Guid>> GenerateWeeklyPostAsync(CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         int daysUntilMonday = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;

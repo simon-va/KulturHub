@@ -1,17 +1,16 @@
 using ErrorOr;
 using KulturHub.Application.Errors;
 using KulturHub.Domain.Interfaces;
-using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace KulturHub.Application.Features.Instagram.RefreshToken;
 
-public class RefreshInstagramTokenHandler(
+public class InstagramTokenService(
     IInstagramTokenRepository tokenRepository,
     IInstagramTokenRefresher tokenRefresher,
-    ILogger<RefreshInstagramTokenHandler> logger) : IRequestHandler<RefreshInstagramTokenCommand, ErrorOr<bool>>
+    ILogger<InstagramTokenService> logger) : IInstagramTokenService
 {
-    public async Task<ErrorOr<bool>> Handle(RefreshInstagramTokenCommand request, CancellationToken cancellationToken)
+    public async Task<ErrorOr<bool>> RefreshTokenAsync(CancellationToken cancellationToken)
     {
         var token = await tokenRepository.GetCurrentTokenAsync();
 

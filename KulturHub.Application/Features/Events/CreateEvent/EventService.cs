@@ -1,24 +1,29 @@
 using ErrorOr;
+using FluentValidation;
 using KulturHub.Application.Errors;
 using KulturHub.Domain.Entities;
 using KulturHub.Domain.Enums;
 using KulturHub.Domain.Interfaces;
-using MediatR;
 
 namespace KulturHub.Application.Features.Events.CreateEvent;
 
-public class CreateEventHandler(
+public class EventService(
     IEventRepository eventRepository,
-    IChaynsApiClient chaynsApiClient) : IRequestHandler<CreateEventCommand, ErrorOr<Guid>>
+    IChaynsApiClient chaynsApiClient,
+    IValidator<CreateEventInput> validator) : IEventService
 {
-    public async Task<ErrorOr<Guid>> Handle(CreateEventCommand request, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Guid>> CreateEventAsync(CreateEventInput input, CancellationToken cancellationToken)
     {
+        var validationResult = await validator.ValidateAsync(input, cancellationToken);
+        if (!validationResult.IsValid)
+            throw new ValidationException(validationResult.Errors);
+
         var @event = Event.Create(
-            request.Title,
-            request.StartTime,
-            request.EndTime,
-            request.Address,
-            request.Description);
+            input.Title,
+            input.StartTime,
+            input.EndTime,
+            input.Address,
+            input.Description);
 
         await eventRepository.CreateAsync(@event);
 

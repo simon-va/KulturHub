@@ -2,9 +2,9 @@ using FluentValidation;
 
 namespace KulturHub.Application.Features.Events.CreateEvent;
 
-public sealed class CreateEventCommandValidator : AbstractValidator<CreateEventCommand>
+public sealed class CreateEventInputValidator : AbstractValidator<CreateEventInput>
 {
-    public CreateEventCommandValidator()
+    public CreateEventInputValidator()
     {
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("Title is required.")
