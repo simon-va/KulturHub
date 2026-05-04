@@ -8,6 +8,8 @@ public class CreateEventInputValidatorTests
     private readonly CreateEventInputValidator _validator = new();
 
     private static CreateEventInput ValidInput() => new(
+        OrganisationId: Guid.NewGuid(),
+        UserId: Guid.NewGuid(),
         Title: "Konzert im Park",
         StartTime: DateTime.UtcNow.AddDays(1),
         EndTime: DateTime.UtcNow.AddDays(1).AddHours(2),

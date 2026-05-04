@@ -1,0 +1,25 @@
+### Validierungsfehler – leerer Name (400)
+POST {{baseUrl}}/organisations
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": ""
+}
+
+### Nicht gefundene Organisation (404)
+PUT {{baseUrl}}/organisations/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Existiert nicht"
+}
+
+### Kein Token → 401
+POST {{baseUrl}}/organisations
+Content-Type: application/json
+
+{
+  "name": "Ohne Auth"
+}

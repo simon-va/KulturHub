@@ -1,8 +1,11 @@
 using FluentValidation;
+using KulturHub.Application.Features.Auth;
+using KulturHub.Application.Features.Auth.SignUp;
 using KulturHub.Application.Features.Events;
 using KulturHub.Application.Features.Events.CreateEvent;
 using KulturHub.Application.Features.Instagram;
 using KulturHub.Application.Features.Instagram.RefreshToken;
+using KulturHub.Application.Features.Organisations;
 using KulturHub.Application.Features.WeeklyPost;
 using KulturHub.Application.Features.WeeklyPost.GenerateWeeklyPost;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,9 +18,11 @@ public static class DependencyInjection
     {
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
+        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEventService, EventService>();
         services.AddScoped<IWeeklyPostService, WeeklyPostService>();
         services.AddScoped<IInstagramTokenService, InstagramTokenService>();
+        services.AddScoped<IOrganisationService, OrganisationService>();
 
         return services;
     }

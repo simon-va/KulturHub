@@ -1,0 +1,26 @@
+### Organisation erstellen
+# Response enthält die neue Organisation-ID → @organisationId unten eintragen
+POST {{baseUrl}}/organisations
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Stadttheater Münster"
+}
+
+###
+
+@organisationId = <id aus der Response>
+
+### Organisation umbenennen
+PUT {{baseUrl}}/organisations/{{organisationId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Stadttheater Münster (umbenannt)"
+}
+
+### Organisation löschen
+DELETE {{baseUrl}}/organisations/{{organisationId}}
+Authorization: Bearer {{token}}

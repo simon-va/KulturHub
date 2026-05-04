@@ -1,0 +1,11 @@
+### Signup – Token holen (einmalig oder mit neuer E-Mail)
+# Das accessToken aus der Response in http-client.env.json.local als "token" eintragen
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "firstName": "Max",
+  "lastName": "Mustermann",
+  "email": "simon.vahlbrock@icloud.com",
+  "password": "Secret123!"
+}

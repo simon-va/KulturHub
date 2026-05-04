@@ -5,5 +5,5 @@ namespace KulturHub.Application.Features.Events;
 
 public interface IEventService
 {
-    Task<ErrorOr<Guid>> CreateEventAsync(CreateEventInput input, CancellationToken cancellationToken);
+    Task<ErrorOr<Guid>> CreateEventAsync(CreateEventInput input);
 }

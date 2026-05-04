@@ -1,4 +1,5 @@
 using KulturHub.Domain.Interfaces;
+using KulturHub.Infrastructure.Auth;
 using KulturHub.Infrastructure.ExternalApis;
 using KulturHub.Infrastructure.ImageGeneration;
 using KulturHub.Infrastructure.Instagram;
@@ -19,9 +20,12 @@ public static class DependencyInjection
         services.AddSingleton<IDbConnectionFactory>(_ =>
             new DbConnectionFactory(configuration));
 
+        services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IPostRepository, PostRepository>();
         services.AddScoped<IEventRepository, EventRepository>();
+        services.AddScoped<IOrganisationRepository, OrganisationRepository>();
 
+        services.AddHttpClient<ISupabaseAdminClient, SupabaseAdminClient>();
         services.AddHttpClient<IChaynsApiClient, ChaynsApiClient>();
 
         services.AddSingleton<LayoutEngine>();

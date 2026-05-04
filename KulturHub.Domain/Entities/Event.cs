@@ -5,6 +5,7 @@ namespace KulturHub.Domain.Entities;
 public class Event
 {
     public Guid Id { get; private set; }
+    public Guid OrganisationId { get; private set; }
     public string Title { get; private set; } = string.Empty;
     public DateTime StartTime { get; private set; }
     public DateTime EndTime { get; private set; }
@@ -20,6 +21,7 @@ public class Event
     public void SetErrorMessage(string message) => ErrorMessage = message;
 
     public static Event Create(
+        Guid organisationId,
         string title,
         DateTime startTime,
         DateTime endTime,
@@ -27,6 +29,7 @@ public class Event
         string description) => new()
     {
         Id = Guid.NewGuid(),
+        OrganisationId = organisationId,
         Title = title,
         StartTime = startTime.ToUniversalTime(),
         EndTime = endTime.ToUniversalTime(),

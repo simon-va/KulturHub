@@ -1,15 +1,33 @@
 using FluentValidation;
-using KulturHub.Api.Requests;
+using KulturHub.Api.Endpoints;
 using KulturHub.Application;
-using KulturHub.Application.Features.Events;
-using KulturHub.Application.Features.Events.CreateEvent;
 using KulturHub.Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Tokens;
+
+JsonWebTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = builder.Configuration["Supabase:DiscoveryUrl"]
+            ?? throw new InvalidOperationException("Supabase:DiscoveryUrl is not configured.");
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = true,
+            ValidAudience    = "authenticated",
+            ValidateLifetime = true,
+            ClockSkew        = TimeSpan.FromSeconds(30),
+        };
+    });
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -48,18 +66,11 @@ app.UseExceptionHandler(errApp =>
 });
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapPost("/events", async (CreateEventRequest req, IEventService eventService, CancellationToken ct) =>
-{
-    var result = await eventService.CreateEventAsync(
-        new CreateEventInput(req.Title, req.StartTime, req.EndTime, req.Address, req.Description),
-        ct);
-
-    return result.Match(
-        id => Results.Created($"/events/{id}", new { id }),
-        errors => Results.Problem(
-            title: errors[0].Description,
-            statusCode: StatusCodes.Status500InternalServerError));
-});
+app.MapEventEndpoints();
+app.MapAuthEndpoints();
+app.MapOrganisationEndpoints();
 
 app.Run();

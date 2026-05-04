@@ -9,16 +9,22 @@ namespace KulturHub.Application.Features.Events.CreateEvent;
 
 public class EventService(
     IEventRepository eventRepository,
+    IOrganisationRepository organisationRepository,
     IChaynsApiClient chaynsApiClient,
     IValidator<CreateEventInput> validator) : IEventService
 {
-    public async Task<ErrorOr<Guid>> CreateEventAsync(CreateEventInput input, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Guid>> CreateEventAsync(CreateEventInput input)
     {
-        var validationResult = await validator.ValidateAsync(input, cancellationToken);
+        var validationResult = await validator.ValidateAsync(input);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        var isMember = await organisationRepository.IsMemberAsync(input.OrganisationId, input.UserId);
+        if (!isMember)
+            return OrganisationErrors.Forbidden();
+
         var @event = Event.Create(
+            input.OrganisationId,
             input.Title,
             input.StartTime,
             input.EndTime,

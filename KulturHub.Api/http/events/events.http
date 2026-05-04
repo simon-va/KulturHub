@@ -1,8 +1,10 @@
-@baseUrl = http://localhost:5159
-
 ### Valide Anfrage – Veranstaltung erstellen
-POST {{baseUrl}}/events
+# organisationId auf eine vorhandene Organisation-ID setzen
+@organisationId = 00000000-0000-0000-0000-000000000000
+
+POST {{baseUrl}}/organisations/{{organisationId}}/events
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "title": "Konzert im Park",
