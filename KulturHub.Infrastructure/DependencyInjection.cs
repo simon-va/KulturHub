@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IPostRepository, PostRepository>();
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IOrganisationRepository, OrganisationRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddSingleton(_ => new Supabase.Client(
             configuration["Supabase:Url"]
