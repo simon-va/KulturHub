@@ -11,6 +11,7 @@ namespace KulturHub.Application.Features.Auth.SignUp;
 public class AuthService(
     IAuthProvider authProvider,
     IAuthRepository authRepository,
+    IInvitationRepository invitationRepository,
     ISupabaseAdminClient supabaseAdminClient,
     IValidator<SignUpInput> validator,
     ILogger<AuthService> logger) : IAuthService
@@ -23,6 +24,14 @@ public class AuthService(
                 .Select(e => Error.Validation(e.PropertyName, e.ErrorMessage))
                 .ToList();
 
+        var invitation = await invitationRepository.GetByCodeAsync(input.InvitationCode);
+        if (invitation is null)
+            return InvitationErrors.NotFound;
+        if (invitation.IsExpired)
+            return InvitationErrors.Expired;
+        if (invitation.IsUsed)
+            return InvitationErrors.AlreadyUsed;
+
         var sessionResult = await authProvider.SignUpAsync(input.Email, input.Password);
         if (sessionResult.IsError)
             return sessionResult.Errors;
@@ -32,7 +41,7 @@ public class AuthService(
 
         try
         {
-            await authRepository.InsertUserAsync(user);
+            await authRepository.InsertUserAsync(user, invitation.Id);
         }
         catch (Exception ex)
         {

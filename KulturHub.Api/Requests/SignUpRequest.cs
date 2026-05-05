@@ -4,4 +4,5 @@ public record SignUpRequest(
     string FirstName,
     string LastName,
     string Email,
-    string Password);
+    string Password,
+    string InvitationCode);

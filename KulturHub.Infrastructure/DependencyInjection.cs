@@ -22,6 +22,7 @@ public static class DependencyInjection
             new DbConnectionFactory(configuration));
 
         services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
         services.AddScoped<IPostRepository, PostRepository>();
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IOrganisationRepository, OrganisationRepository>();

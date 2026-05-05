@@ -12,7 +12,7 @@ public static class AuthEndpoints
         app.MapPost("/auth/signup", async (SignUpRequest req, IAuthService authService) =>
         {
             var result = await authService.SignUpAsync(
-                new SignUpInput(req.FirstName, req.LastName, req.Email, req.Password));
+                new SignUpInput(req.FirstName, req.LastName, req.Email, req.Password, req.InvitationCode));
 
             return result.Match(
                 response => Results.Ok(response),

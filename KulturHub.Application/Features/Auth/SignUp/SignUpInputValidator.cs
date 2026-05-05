@@ -21,5 +21,8 @@ public sealed class SignUpInputValidator : AbstractValidator<SignUpInput>
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.")
             .MinimumLength(8).WithMessage("Password must be at least 8 characters.");
+
+        RuleFor(x => x.InvitationCode)
+            .NotEmpty().WithMessage("InvitationCode is required.");
     }
 }
