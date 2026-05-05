@@ -17,6 +17,9 @@ public static class AuthEndpoints
             return result.Match(
                 response => Results.Ok(response),
                 errors => errors.ToResult());
-        });
+        })
+        .Produces<AuthResponse>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict);
     }
 }

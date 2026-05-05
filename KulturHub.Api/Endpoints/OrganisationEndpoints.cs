@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using KulturHub.Api.Extensions;
 using KulturHub.Api.Requests;
+using KulturHub.Api.Responses;
 using KulturHub.Application.Features.Organisations;
 using KulturHub.Application.Features.Organisations.CreateOrganisation;
+using KulturHub.Application.Features.Organisations.GetOrganisations;
 using KulturHub.Application.Features.Organisations.UpdateOrganisation;
 
 namespace KulturHub.Api.Endpoints;
@@ -16,7 +18,10 @@ public static class OrganisationEndpoints
             var userId = user.GetUserId();
             var organisations = await organisationService.GetByUserIdAsync(userId);
             return Results.Ok(organisations);
-        }).RequireAuthorization();
+        })
+        .RequireAuthorization()
+        .Produces<IEnumerable<OrganisationResponse>>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         app.MapPost("/organisations", async (CreateOrganisationRequest req, ClaimsPrincipal user, IOrganisationService organisationService) =>
         {
@@ -24,9 +29,13 @@ public static class OrganisationEndpoints
             var result = await organisationService.CreateAsync(new CreateOrganisationInput(req.Name, userId));
 
             return result.Match(
-                id => Results.Created($"/organisations/{id}", new { id }),
+                id => Results.Created($"/organisations/{id}", new CreatedResponse(id)),
                 errors => errors.ToResult());
-        }).RequireAuthorization();
+        })
+        .RequireAuthorization()
+        .Produces<CreatedResponse>(StatusCodes.Status201Created)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         app.MapPut("/organisations/{id:guid}", async (Guid id, UpdateOrganisationRequest req, ClaimsPrincipal user, IOrganisationService organisationService) =>
         {
@@ -36,7 +45,13 @@ public static class OrganisationEndpoints
             return result.Match(
                 _ => Results.NoContent(),
                 errors => errors.ToResult());
-        }).RequireAuthorization();
+        })
+        .RequireAuthorization()
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound);
 
         app.MapDelete("/organisations/{id:guid}", async (Guid id, ClaimsPrincipal user, IOrganisationService organisationService) =>
         {
@@ -46,6 +61,11 @@ public static class OrganisationEndpoints
             return result.Match(
                 _ => Results.NoContent(),
                 errors => errors.ToResult());
-        }).RequireAuthorization();
+        })
+        .RequireAuthorization()
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound);
     }
 }

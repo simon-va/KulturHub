@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using KulturHub.Api.Extensions;
 using KulturHub.Api.Requests;
+using KulturHub.Api.Responses;
 using KulturHub.Application.Features.Events;
 using KulturHub.Application.Features.Events.CreateEvent;
 
@@ -21,8 +22,14 @@ public static class EventEndpoints
                 new CreateEventInput(organisationId, userId, req.Title, req.StartTime, req.EndTime, req.Address, req.Description));
 
             return result.Match(
-                id => Results.Created($"/events/{id}", new { id }),
+                id => Results.Created($"/events/{id}", new CreatedResponse(id)),
                 errors => errors.ToResult());
-        }).RequireAuthorization();
+        })
+        .RequireAuthorization()
+        .Produces<CreatedResponse>(StatusCodes.Status201Created)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound);
     }
 }
