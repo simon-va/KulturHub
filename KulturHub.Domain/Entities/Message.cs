@@ -18,4 +18,13 @@ public class Message
         Content = content,
         CreatedAt = DateTime.UtcNow,
     };
+
+    public static Message Reconstitute(Guid id, Guid conversationId, MessageRole role, string content, DateTime createdAt) => new()
+    {
+        Id = id,
+        ConversationId = conversationId,
+        Role = role,
+        Content = content,
+        CreatedAt = createdAt,
+    };
 }

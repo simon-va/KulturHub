@@ -71,4 +71,35 @@ public class EventRepository(
             (EventStatus)r.Status, r.ErrorMessage,
             r.EventCategoryId, r.ConversationId));
     }
+
+    public async Task<Event?> GetByIdAsync(Guid eventId, Guid organisationId)
+    {
+        const string sql = """
+            SELECT id               AS Id,
+                   organisation_id  AS OrganisationId,
+                   title            AS Title,
+                   start_time       AS StartTime,
+                   end_time         AS EndTime,
+                   address          AS Address,
+                   description      AS Description,
+                   created_at       AS CreatedAt,
+                   status           AS Status,
+                   error_message    AS ErrorMessage,
+                   event_category_id AS EventCategoryId,
+                   conversation_id  AS ConversationId
+            FROM events
+            WHERE id = @EventId AND organisation_id = @OrganisationId
+            """;
+
+        using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync();
+        var row = await connection.QuerySingleOrDefaultAsync<EventRow>(sql, new { EventId = eventId, OrganisationId = organisationId });
+        if (row is null) return null;
+        return Event.Reconstitute(
+            row.Id, row.OrganisationId, row.Title,
+            row.StartTime, row.EndTime,
+            row.Address, row.Description, row.CreatedAt,
+            (EventStatus)row.Status, row.ErrorMessage,
+            row.EventCategoryId, row.ConversationId);
+    }
 }

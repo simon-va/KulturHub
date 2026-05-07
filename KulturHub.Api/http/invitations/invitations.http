@@ -1,0 +1,4 @@
+### Einladungscode generieren (nur für Admins)
+# Response enthält den neuen Einladungscode (code) und das Ablaufdatum (expiresAt)
+POST {{baseUrl}}/admin/invitations
+Authorization: Bearer {{token}}

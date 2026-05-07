@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using KulturHub.Api.Extensions;
 using KulturHub.Api.Responses;
+using KulturHub.Application.Features.Events.GetConversation;
 using KulturHub.Application.Features.Events.GetEvents;
 using KulturHub.Application.Features.Events.InitializeEvent;
 
@@ -45,5 +46,25 @@ public static class EventEndpoints
         .Produces<CreatedResponse>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        app.MapGet("/organisations/{organisationId:guid}/events/{eventId:guid}/conversation", async (
+            Guid organisationId,
+            Guid eventId,
+            ClaimsPrincipal user,
+            IGetConversationService getConversationService) =>
+        {
+            var userId = user.GetUserId();
+            var result = await getConversationService.GetConversationAsync(
+                new GetConversationInput(organisationId, eventId, userId));
+
+            return result.Match(
+                conversation => Results.Ok(conversation),
+                errors => errors.ToResult());
+        })
+        .RequireAuthorization()
+        .Produces<ConversationResponse>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound);
     }
 }

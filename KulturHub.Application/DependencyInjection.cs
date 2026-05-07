@@ -1,6 +1,7 @@
 using FluentValidation;
 using KulturHub.Application.Features.Auth;
 using KulturHub.Application.Features.Auth.SignUp;
+using KulturHub.Application.Features.Events.GetConversation;
 using KulturHub.Application.Features.Events.GetEvents;
 using KulturHub.Application.Features.Events.InitializeEvent;
 using KulturHub.Application.Features.Instagram;
@@ -23,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IGetEventsService, GetEventsService>();
         services.AddScoped<IInitializeEventService, InitializeEventService>();
+        services.AddScoped<IGetConversationService, GetConversationService>();
         services.AddScoped<IWeeklyPostService, WeeklyPostService>();
         services.AddScoped<IInstagramTokenService, InstagramTokenService>();
         services.AddScoped<IOrganisationService, OrganisationService>();
