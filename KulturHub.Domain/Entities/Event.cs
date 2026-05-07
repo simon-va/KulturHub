@@ -33,4 +33,25 @@ public class Event
         Status = EventStatus.Draft,
         ConversationId = conversationId,
     };
+
+    public static Event Reconstitute(
+        Guid id, Guid organisationId, string title,
+        DateTime? startTime, DateTime? endTime,
+        string address, string description, DateTime createdAt,
+        EventStatus status, string? errorMessage,
+        Guid? eventCategoryId, Guid? conversationId) => new()
+    {
+        Id = id,
+        OrganisationId = organisationId,
+        Title = title,
+        StartTime = startTime,
+        EndTime = endTime,
+        Address = address,
+        Description = description,
+        CreatedAt = createdAt,
+        Status = status,
+        ErrorMessage = errorMessage,
+        EventCategoryId = eventCategoryId,
+        ConversationId = conversationId,
+    };
 }

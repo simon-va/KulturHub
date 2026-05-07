@@ -1,11 +1,22 @@
 using Dapper;
+using KulturHub.Application.Ports;
 using KulturHub.Domain.Entities;
+using KulturHub.Domain.Enums;
 using KulturHub.Domain.Interfaces;
 
 namespace KulturHub.Infrastructure.Persistence.Repositories;
 
-public class EventRepository(IConnectionProvider connectionProvider) : IEventRepository
+public class EventRepository(
+    IConnectionProvider connectionProvider,
+    IDbConnectionFactory connectionFactory) : IEventRepository
 {
+    private sealed record EventRow(
+        Guid Id, Guid OrganisationId, string Title,
+        DateTime? StartTime, DateTime? EndTime,
+        string Address, string Description, DateTime CreatedAt,
+        int Status, string? ErrorMessage,
+        Guid? EventCategoryId, Guid? ConversationId);
+
     public async Task CreateAsync(Event @event)
     {
         const string sql = """
@@ -28,5 +39,36 @@ public class EventRepository(IConnectionProvider connectionProvider) : IEventRep
             @event.EventCategoryId,
             @event.ConversationId,
         }, connectionProvider.Transaction);
+    }
+
+    public async Task<IEnumerable<Event>> GetByOrganisationIdAsync(Guid organisationId)
+    {
+        const string sql = """
+            SELECT id               AS Id,
+                   organisation_id  AS OrganisationId,
+                   title            AS Title,
+                   start_time       AS StartTime,
+                   end_time         AS EndTime,
+                   address          AS Address,
+                   description      AS Description,
+                   created_at       AS CreatedAt,
+                   status           AS Status,
+                   error_message    AS ErrorMessage,
+                   event_category_id AS EventCategoryId,
+                   conversation_id  AS ConversationId
+            FROM events
+            WHERE organisation_id = @OrganisationId
+            ORDER BY created_at DESC
+            """;
+
+        using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync();
+        var rows = await connection.QueryAsync<EventRow>(sql, new { OrganisationId = organisationId });
+        return rows.Select(r => Event.Reconstitute(
+            r.Id, r.OrganisationId, r.Title,
+            r.StartTime, r.EndTime,
+            r.Address, r.Description, r.CreatedAt,
+            (EventStatus)r.Status, r.ErrorMessage,
+            r.EventCategoryId, r.ConversationId));
     }
 }
