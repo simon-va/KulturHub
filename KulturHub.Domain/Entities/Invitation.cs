@@ -13,6 +13,14 @@ public class Invitation
 
     private Invitation() { }
 
+    public static Invitation Create() => new()
+    {
+        Id = Guid.NewGuid(),
+        Code = Guid.NewGuid().ToString("N").ToUpper()[..8],
+        CreatedAt = DateTime.UtcNow,
+        ExpiresAt = DateTime.UtcNow.AddDays(7),
+    };
+
     public static Invitation Reconstitute(Guid id, string code, Guid? usedBy, DateTime createdAt, DateTime expiresAt)
         => new() { Id = id, Code = code, UsedBy = usedBy, CreatedAt = createdAt, ExpiresAt = expiresAt };
 }

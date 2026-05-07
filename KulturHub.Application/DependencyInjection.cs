@@ -5,6 +5,7 @@ using KulturHub.Application.Features.Events.GetEvents;
 using KulturHub.Application.Features.Events.InitializeEvent;
 using KulturHub.Application.Features.Instagram;
 using KulturHub.Application.Features.Instagram.RefreshToken;
+using KulturHub.Application.Features.Invitations.CreateInvitation;
 using KulturHub.Application.Features.Organisations;
 using KulturHub.Application.Features.Users;
 using KulturHub.Application.Features.WeeklyPost;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IInstagramTokenService, InstagramTokenService>();
         services.AddScoped<IOrganisationService, OrganisationService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<ICreateInvitationService, CreateInvitationService>();
 
         return services;
     }

@@ -80,5 +80,6 @@ app.MapEventEndpoints();
 app.MapAuthEndpoints();
 app.MapOrganisationEndpoints();
 app.MapUserEndpoints();
+app.MapInvitationEndpoints();
 
 app.Run();

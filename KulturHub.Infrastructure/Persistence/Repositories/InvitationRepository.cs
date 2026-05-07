@@ -24,5 +24,23 @@ public class InvitationRepository(IDbConnectionFactory connectionFactory) : IInv
             : Invitation.Reconstitute(row.Id, row.Code, row.UsedBy, row.CreatedAt, row.ExpiresAt);
     }
 
+    public async Task CreateAsync(Invitation invitation)
+    {
+        const string sql = """
+            INSERT INTO invitations (id, code, created_at, expires_at)
+            VALUES (@Id, @Code, @CreatedAt, @ExpiresAt)
+            """;
+
+        using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync();
+        await connection.ExecuteAsync(sql, new
+        {
+            invitation.Id,
+            invitation.Code,
+            invitation.CreatedAt,
+            invitation.ExpiresAt,
+        });
+    }
+
     private sealed record InvitationRow(Guid Id, string Code, Guid? UsedBy, DateTime CreatedAt, DateTime ExpiresAt);
 }
