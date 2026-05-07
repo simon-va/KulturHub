@@ -72,6 +72,31 @@ public class EventRepository(
             r.EventCategoryId, r.ConversationId));
     }
 
+    public async Task UpdateDraftAsync(Event @event)
+    {
+        const string sql = """
+            UPDATE events
+            SET title       = @Title,
+                address     = @Address,
+                description = @Description,
+                start_time  = @StartTime,
+                end_time    = @EndTime,
+                status      = @Status
+            WHERE id = @Id
+            """;
+
+        await connectionProvider.Connection.ExecuteAsync(sql, new
+        {
+            @event.Id,
+            @event.Title,
+            @event.Address,
+            @event.Description,
+            @event.StartTime,
+            @event.EndTime,
+            Status = (int)@event.Status,
+        }, connectionProvider.Transaction);
+    }
+
     public async Task<Event?> GetByIdAsync(Guid eventId, Guid organisationId)
     {
         const string sql = """

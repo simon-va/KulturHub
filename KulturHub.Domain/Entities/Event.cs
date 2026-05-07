@@ -19,6 +19,17 @@ public class Event
 
     public void SetStatus(EventStatus status) => Status = status;
 
+    public void UpdateDraft(string? title, string? address, string? description,
+                            DateTime? startTime, DateTime? endTime, EventStatus status)
+    {
+        if (title is not null) Title = title;
+        if (address is not null) Address = address;
+        if (description is not null) Description = description;
+        if (startTime is not null) StartTime = startTime;
+        if (endTime is not null) EndTime = endTime;
+        Status = status;
+    }
+
     public void SetFailed(string errorMessage)
     {
         Status = EventStatus.Failed;

@@ -1,5 +1,6 @@
 using KulturHub.Application.Ports;
 using KulturHub.Domain.Interfaces;
+using KulturHub.Infrastructure.AI;
 using KulturHub.Infrastructure.Auth;
 using KulturHub.Infrastructure.ExternalApis;
 using KulturHub.Infrastructure.ImageGeneration;
@@ -9,6 +10,7 @@ using KulturHub.Infrastructure.Persistence.Repositories;
 using KulturHub.Infrastructure.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenAI;
 
 namespace KulturHub.Infrastructure;
 
@@ -33,6 +35,11 @@ public static class DependencyInjection
         services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<IOrganisationRepository, OrganisationRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+
+        var openAiApiKey = configuration["OpenAI:ApiKey"]
+            ?? throw new InvalidOperationException("OpenAI:ApiKey is not configured.");
+        services.AddSingleton(new OpenAIClient(openAiApiKey));
+        services.AddScoped<IAiChatService, OpenAiChatService>();
 
         services.AddSingleton(_ => new Supabase.Client(
             configuration["Supabase:Url"]

@@ -2,7 +2,8 @@ namespace KulturHub.Domain.Enums;
 
 public enum EventStatus
 {
-    Draft,
-    Published,
-    Failed
+    Draft = 0,
+    Published = 1,
+    Failed = 2,
+    ReadyToPublish = 3,
 }

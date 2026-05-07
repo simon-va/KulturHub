@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using KulturHub.Api.Extensions;
+using KulturHub.Api.Requests;
 using KulturHub.Api.Responses;
 using KulturHub.Application.Features.Events.GetConversation;
 using KulturHub.Application.Features.Events.GetEvents;
 using KulturHub.Application.Features.Events.InitializeEvent;
+using KulturHub.Application.Features.Events.SendMessage;
 
 namespace KulturHub.Api.Endpoints;
 
@@ -63,6 +65,29 @@ public static class EventEndpoints
         })
         .RequireAuthorization()
         .Produces<ConversationResponse>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound);
+
+        app.MapPost("/organisations/{organisationId:guid}/events/{eventId:guid}/conversation/messages", async (
+            Guid organisationId,
+            Guid eventId,
+            SendMessageRequest body,
+            ClaimsPrincipal user,
+            ISendMessageService sendMessageService,
+            CancellationToken cancellationToken) =>
+        {
+            var userId = user.GetUserId();
+            var result = await sendMessageService.SendMessageAsync(
+                new SendMessageInput(organisationId, eventId, userId, body.Content),
+                cancellationToken);
+
+            return result.Match(
+                message => Results.Ok(message),
+                errors => errors.ToResult());
+        })
+        .RequireAuthorization()
+        .Produces<MessageResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound);
