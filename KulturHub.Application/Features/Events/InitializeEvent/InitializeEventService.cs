@@ -12,7 +12,7 @@ public class InitializeEventService(
     IConversationRepository conversationRepository,
     IMessageRepository messageRepository,
     IEventRepository eventRepository,
-    IDbConnectionFactory connectionFactory) : IInitializeEventService
+    IUnitOfWork unitOfWork) : IInitializeEventService
 {
     public async Task<ErrorOr<Guid>> InitializeEventAsync(InitializeEventInput input)
     {
@@ -24,15 +24,11 @@ public class InitializeEventService(
         var message = Message.Create(conversation.Id, MessageRole.System, "Neue Veranstaltung erstellt. Erzähl mir von ihr.");
         var @event = Event.CreateDraft(input.OrganisationId, conversation.Id);
 
-        using var connection = connectionFactory.CreateConnection();
-        await connection.OpenAsync();
-        using var transaction = await connection.BeginTransactionAsync();
-
-        await conversationRepository.CreateAsync(conversation, transaction);
-        await messageRepository.CreateAsync(message, transaction);
-        await eventRepository.CreateAsync(@event, transaction);
-
-        await transaction.CommitAsync();
+        await unitOfWork.BeginAsync();
+        await conversationRepository.CreateAsync(conversation);
+        await messageRepository.CreateAsync(message);
+        await eventRepository.CreateAsync(@event);
+        await unitOfWork.CommitAsync();
 
         return @event.Id;
     }

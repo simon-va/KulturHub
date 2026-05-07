@@ -21,6 +21,10 @@ public static class DependencyInjection
         services.AddSingleton<IDbConnectionFactory>(_ =>
             new DbConnectionFactory(configuration));
 
+        services.AddScoped<UnitOfWork>();
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<UnitOfWork>());
+        services.AddScoped<IConnectionProvider>(sp => sp.GetRequiredService<UnitOfWork>());
+
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IInvitationRepository, InvitationRepository>();
         services.AddScoped<IPostRepository, PostRepository>();

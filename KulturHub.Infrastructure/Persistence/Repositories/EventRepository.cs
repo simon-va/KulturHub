@@ -1,20 +1,19 @@
-using System.Data;
 using Dapper;
 using KulturHub.Domain.Entities;
 using KulturHub.Domain.Interfaces;
 
 namespace KulturHub.Infrastructure.Persistence.Repositories;
 
-public class EventRepository : IEventRepository
+public class EventRepository(IConnectionProvider connectionProvider) : IEventRepository
 {
-    public async Task CreateAsync(Event @event, IDbTransaction transaction)
+    public async Task CreateAsync(Event @event)
     {
         const string sql = """
-            INSERT INTO events (id, organisation_id, title, start_time, end_time, address, description, created_at, status, event_category_id, conversation_id)
-            VALUES (@Id, @OrganisationId, @Title, @StartTime, @EndTime, @Address, @Description, @CreatedAt, @Status, @EventCategoryId, @ConversationId)
+            INSERT INTO events (id, organisation_id, title, start_time, end_time, address, description, created_at, status, error_message, event_category_id, conversation_id)
+            VALUES (@Id, @OrganisationId, @Title, @StartTime, @EndTime, @Address, @Description, @CreatedAt, @Status, @ErrorMessage, @EventCategoryId, @ConversationId)
             """;
 
-        await transaction.Connection!.ExecuteAsync(sql, new
+        await connectionProvider.Connection.ExecuteAsync(sql, new
         {
             @event.Id,
             @event.OrganisationId,
@@ -24,9 +23,10 @@ public class EventRepository : IEventRepository
             @event.Address,
             @event.Description,
             @event.CreatedAt,
-            Status = @event.Status.ToString(),
+            Status = (int)@event.Status,
+            @event.ErrorMessage,
             @event.EventCategoryId,
             @event.ConversationId,
-        }, transaction);
+        }, connectionProvider.Transaction);
     }
 }
