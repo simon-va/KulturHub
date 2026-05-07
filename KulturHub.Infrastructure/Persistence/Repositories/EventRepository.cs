@@ -9,8 +9,8 @@ public class EventRepository(IDbConnectionFactory connectionFactory) : IEventRep
     public async Task CreateAsync(Event @event)
     {
         const string sql = """
-            INSERT INTO events (id, organisation_id, title, start_time, end_time, address, description, created_at, status)
-            VALUES (@Id, @OrganisationId, @Title, @StartTime, @EndTime, @Address, @Description, @CreatedAt, @Status)
+            INSERT INTO events (id, organisation_id, title, start_time, end_time, address, description, created_at, status, event_category_id)
+            VALUES (@Id, @OrganisationId, @Title, @StartTime, @EndTime, @Address, @Description, @CreatedAt, @Status, @EventCategoryId)
             """;
 
         using var connection = connectionFactory.CreateConnection();
@@ -26,6 +26,7 @@ public class EventRepository(IDbConnectionFactory connectionFactory) : IEventRep
             @event.Description,
             @event.CreatedAt,
             Status = @event.Status.ToString(),
+            @event.EventCategoryId,
         });
     }
 }

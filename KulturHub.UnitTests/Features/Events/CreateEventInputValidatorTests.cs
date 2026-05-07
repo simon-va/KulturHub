@@ -14,7 +14,8 @@ public class CreateEventInputValidatorTests
         StartTime: DateTime.UtcNow.AddDays(1),
         EndTime: DateTime.UtcNow.AddDays(1).AddHours(2),
         Address: "Musterstraße 1, 12345 Musterstadt",
-        Description: "Ein großartiges Konzert.");
+        Description: "Ein großartiges Konzert.",
+        EventCategoryId: null);
 
     [Fact]
     public void Validate_WhenTitleIsEmpty_ShouldHaveValidationError()

@@ -19,7 +19,7 @@ public static class EventEndpoints
         {
             var userId = user.GetUserId();
             var result = await eventService.CreateEventAsync(
-                new CreateEventInput(organisationId, userId, req.Title, req.StartTime, req.EndTime, req.Address, req.Description));
+                new CreateEventInput(organisationId, userId, req.Title, req.StartTime, req.EndTime, req.Address, req.Description, req.EventCategoryId));
 
             return result.Match(
                 id => Results.Created($"/events/{id}", new CreatedResponse(id)),

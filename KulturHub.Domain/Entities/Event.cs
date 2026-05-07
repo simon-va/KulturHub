@@ -13,6 +13,7 @@ public class Event
     public string Description { get; private set; } = string.Empty;
     public DateTime CreatedAt { get; private set; }
     public EventStatus Status { get; private set; }
+    public Guid? EventCategoryId { get; private set; }
 
     public void SetStatus(EventStatus status) => Status = status;
 
@@ -22,7 +23,8 @@ public class Event
         DateTime startTime,
         DateTime endTime,
         string address,
-        string description) => new()
+        string description,
+        Guid? eventCategoryId = null) => new()
     {
         Id = Guid.NewGuid(),
         OrganisationId = organisationId,
@@ -33,5 +35,6 @@ public class Event
         Description = description,
         CreatedAt = DateTime.UtcNow,
         Status = EventStatus.Published,
+        EventCategoryId = eventCategoryId,
     };
 }

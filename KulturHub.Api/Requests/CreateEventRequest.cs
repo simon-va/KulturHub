@@ -5,4 +5,5 @@ public record CreateEventRequest(
     DateTime StartTime,
     DateTime EndTime,
     string Address,
-    string Description);
+    string Description,
+    Guid? EventCategoryId);

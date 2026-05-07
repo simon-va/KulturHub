@@ -29,7 +29,8 @@ public class EventService(
             input.StartTime,
             input.EndTime,
             input.Address,
-            input.Description);
+            input.Description,
+            input.EventCategoryId);
 
         await eventRepository.CreateAsync(@event);
 
