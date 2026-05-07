@@ -1,7 +1,7 @@
 using Dapper;
 using KulturHub.Domain.Entities;
 using KulturHub.Domain.Interfaces;
-using KulturHub.Infrastructure.Persistence;
+using KulturHub.Application.Ports;
 
 namespace KulturHub.Infrastructure.Persistence.Repositories;
 

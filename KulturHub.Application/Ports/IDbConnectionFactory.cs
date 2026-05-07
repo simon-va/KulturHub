@@ -1,6 +1,6 @@
 using System.Data.Common;
 
-namespace KulturHub.Infrastructure.Persistence;
+namespace KulturHub.Application.Ports;
 
 public interface IDbConnectionFactory
 {

@@ -1,9 +1,7 @@
 using System.Security.Claims;
 using KulturHub.Api.Extensions;
-using KulturHub.Api.Requests;
 using KulturHub.Api.Responses;
-using KulturHub.Application.Features.Events;
-using KulturHub.Application.Features.Events.CreateEvent;
+using KulturHub.Application.Features.Events.InitializeEvent;
 
 namespace KulturHub.Api.Endpoints;
 
@@ -11,15 +9,14 @@ public static class EventEndpoints
 {
     public static void MapEventEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/organisations/{organisationId:guid}/events", async (
+        app.MapPost("/organisations/{organisationId:guid}/events/initialize", async (
             Guid organisationId,
-            CreateEventRequest req,
             ClaimsPrincipal user,
-            IEventService eventService) =>
+            IInitializeEventService initializeEventService) =>
         {
             var userId = user.GetUserId();
-            var result = await eventService.CreateEventAsync(
-                new CreateEventInput(organisationId, userId, req.Title, req.StartTime, req.EndTime, req.Address, req.Description, req.EventCategoryId));
+            var result = await initializeEventService.InitializeEventAsync(
+                new InitializeEventInput(organisationId, userId));
 
             return result.Match(
                 id => Results.Created($"/events/{id}", new CreatedResponse(id)),
@@ -27,9 +24,7 @@ public static class EventEndpoints
         })
         .RequireAuthorization()
         .Produces<CreatedResponse>(StatusCodes.Status201Created)
-        .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status403Forbidden)
-        .ProducesProblem(StatusCodes.Status404NotFound);
+        .ProducesProblem(StatusCodes.Status403Forbidden);
     }
 }

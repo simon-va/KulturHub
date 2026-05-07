@@ -14,27 +14,19 @@ public class Event
     public DateTime CreatedAt { get; private set; }
     public EventStatus Status { get; private set; }
     public Guid? EventCategoryId { get; private set; }
+    public Guid? ConversationId { get; private set; }
 
     public void SetStatus(EventStatus status) => Status = status;
 
-    public static Event Create(
-        Guid organisationId,
-        string title,
-        DateTime startTime,
-        DateTime endTime,
-        string address,
-        string description,
-        Guid? eventCategoryId = null) => new()
+    public static Event CreateDraft(Guid organisationId, Guid conversationId) => new()
     {
         Id = Guid.NewGuid(),
         OrganisationId = organisationId,
-        Title = title,
-        StartTime = startTime.ToUniversalTime(),
-        EndTime = endTime.ToUniversalTime(),
-        Address = address,
-        Description = description,
+        StartTime = DateTime.UtcNow,
+        EndTime = DateTime.UtcNow,
         CreatedAt = DateTime.UtcNow,
-        Status = EventStatus.Published,
-        EventCategoryId = eventCategoryId,
+        Status = EventStatus.Draft,
+        ConversationId = conversationId,
     };
+
 }
