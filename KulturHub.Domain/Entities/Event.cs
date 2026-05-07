@@ -12,13 +12,9 @@ public class Event
     public string Address { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
     public DateTime CreatedAt { get; private set; }
-    public int? ChaynsEventId { get; private set; }
     public EventStatus Status { get; private set; }
-    public string? ErrorMessage { get; private set; }
 
-    public void SetChaynsEventId(int id) => ChaynsEventId = id;
     public void SetStatus(EventStatus status) => Status = status;
-    public void SetErrorMessage(string message) => ErrorMessage = message;
 
     public static Event Create(
         Guid organisationId,
@@ -36,6 +32,6 @@ public class Event
         Address = address,
         Description = description,
         CreatedAt = DateTime.UtcNow,
-        Status = EventStatus.Draft,
+        Status = EventStatus.Published,
     };
 }
