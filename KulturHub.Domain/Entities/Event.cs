@@ -17,23 +17,53 @@ public class Event
     public string? ErrorMessage { get; private set; }
     public Guid? EventCategoryId { get; private set; }
     public Guid? ConversationId { get; private set; }
+    public int Version { get; private set; }
 
-    public void UpdateDetails(string title, string address, string description,
-                              DateTime startTime, DateTime endTime)
+    public void UpdateDetails(string? title = null, string? address = null, string? description = null,
+                              DateTime? startTime = null, DateTime? endTime = null,
+                              EventStatus? newStatus = null)
     {
-        if (string.IsNullOrWhiteSpace(title))
-            throw new DomainException("Title is required.");
-        if (endTime <= startTime)
-            throw new DomainException("End time must be after start time.");
         if (Status == EventStatus.Published)
             throw new DomainException("Cannot modify a published event.");
 
-        Title = title;
-        Address = address;
-        Description = description;
-        StartTime = startTime;
-        EndTime = endTime;
-        Status = EventStatus.ReadyToPublish;
+        if (title is not null)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                throw new DomainException("Title is required.");
+            Title = title;
+        }
+
+        if (address is not null)
+        {
+            if (string.IsNullOrWhiteSpace(address))
+                throw new DomainException("Address is required.");
+            Address = address;
+        }
+
+        if (description is not null)
+        {
+            if (string.IsNullOrWhiteSpace(description))
+                throw new DomainException("Description is required.");
+            Description = description;
+        }
+
+        if (startTime.HasValue)
+        {
+            if (startTime.Value <= DateTime.UtcNow)
+                throw new DomainException("Start time must be in the future.");
+            StartTime = startTime.Value;
+        }
+
+        if (endTime.HasValue)
+        {
+            var effectiveStart = StartTime ?? DateTime.MinValue;
+            if (endTime.Value <= effectiveStart)
+                throw new DomainException("End time must be after start time.");
+            EndTime = endTime.Value;
+        }
+
+        if (newStatus.HasValue)
+            Status = newStatus.Value;
     }
 
     public void Publish()
@@ -44,18 +74,23 @@ public class Event
         Status = EventStatus.Published;
     }
 
-    public void MarkReadyToPublish()
+    public void RevertToDraft()
     {
-        if (Status != EventStatus.Draft)
-            throw new DomainException("Only draft events can be marked as ready.");
+        if (Status != EventStatus.Published)
+            throw new DomainException("Only published events can be reverted to draft.");
 
-        Status = EventStatus.ReadyToPublish;
+        Status = EventStatus.Draft;
     }
 
     public void SetFailed(string errorMessage)
     {
         Status = EventStatus.Failed;
         ErrorMessage = errorMessage;
+    }
+
+    public void IncrementVersion()
+    {
+        Version++;
     }
 
     public static Event CreateDraft(Guid organisationId, Guid conversationId) => new()
@@ -65,6 +100,7 @@ public class Event
         CreatedAt = DateTime.UtcNow,
         Status = EventStatus.Draft,
         ConversationId = conversationId,
+        Version = 0,
     };
 
     public static Event Reconstitute(
@@ -72,7 +108,7 @@ public class Event
         DateTime? startTime, DateTime? endTime,
         string address, string description, DateTime createdAt,
         EventStatus status, string? errorMessage,
-        Guid? eventCategoryId, Guid? conversationId) => new()
+        Guid? eventCategoryId, Guid? conversationId, int version) => new()
     {
         Id = id,
         OrganisationId = organisationId,
@@ -86,5 +122,6 @@ public class Event
         ErrorMessage = errorMessage,
         EventCategoryId = eventCategoryId,
         ConversationId = conversationId,
+        Version = version,
     };
 }

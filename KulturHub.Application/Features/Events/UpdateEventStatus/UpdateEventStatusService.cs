@@ -11,8 +11,8 @@ public class UpdateEventStatusService(
 {
     public async Task<ErrorOr<Updated>> UpdateEventStatusAsync(UpdateEventStatusInput input)
     {
-        if (input.Status == EventStatus.Failed)
-            return EventErrors.InvalidTransition("any", "Failed");
+        if (input.Status == EventStatus.Failed || input.Status == EventStatus.ReadyToPublish)
+            return EventErrors.InvalidTransition("any", input.Status.ToString());
 
         var @event = await eventRepository.GetByIdAsync(input.EventId, input.OrganisationId);
         if (@event is null) return EventErrors.NotFound(input.EventId);
@@ -24,8 +24,8 @@ public class UpdateEventStatusService(
                 case EventStatus.Published:
                     @event.Publish();
                     break;
-                case EventStatus.ReadyToPublish:
-                    @event.MarkReadyToPublish();
+                case EventStatus.Draft:
+                    @event.RevertToDraft();
                     break;
                 default:
                     return EventErrors.InvalidTransition(@event.Status.ToString(), input.Status.ToString());

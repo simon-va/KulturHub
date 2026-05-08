@@ -15,4 +15,10 @@ public static class EventErrors
 
     public static Error InvalidTransition(string from, string to) =>
         Error.Validation("Event.InvalidTransition", $"Cannot transition from '{from}' to '{to}'.");
+
+    public static Error AiParseError() =>
+        Error.Failure("Event.AiParseError", "AI returned an unparseable or invalid response.");
+
+    public static Error ConcurrencyConflict() =>
+        Error.Conflict("Event.ConcurrencyConflict", "Event was modified by another request. Please try again.");
 }

@@ -9,4 +9,4 @@ internal record EventAiResponse(
     [property: JsonPropertyName("start_time")]  string? StartTime,
     [property: JsonPropertyName("end_time")]    string? EndTime,
     [property: JsonPropertyName("status")]      string? Status,
-    [property: JsonPropertyName("reply")]       string  Reply);
+    [property: JsonPropertyName("reply")]       string? Reply);

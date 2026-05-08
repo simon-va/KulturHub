@@ -15,7 +15,7 @@ public class SendMessageService(
     IMessageRepository messageRepository,
     IAiChatService aiChatService) : ISendMessageService
 {
-    private const string SystemPrompt = """
+    private const string BaseSystemPrompt = """
         Du bist ein freundlicher Assistent, der Vereinsvertretern hilft, ihre Veranstaltung für den Kulturkalender zu erfassen.
         Frage nach diesen fünf Feldern: Titel der Veranstaltung, Adresse/Ort, Beschreibung, Beginn (Datum + Uhrzeit) und Ende (Datum + Uhrzeit).
         Frage immer nur nach einer fehlenden Information auf einmal. Antworte ausschließlich auf Deutsch.
@@ -23,6 +23,7 @@ public class SendMessageService(
         Gib Beginn und Ende im ISO-8601-Format zurück, z.B. "2025-07-12T18:00:00".
         Felder, die noch nicht bekannt sind, lasse im JSON weg.
         Wenn alle benötigten Felder mit Daten gefüllt sind, kannst du dem Nutzer Bescheid geben, dass er die Veranstaltung veröffentlichen kann.
+        Du musst in JEDER Antwort einen Wert für "reply" zurückgeben. Das ist deine direkte, freundliche Antwort an den Nutzer.
         """;
 
     private const string JsonSchema = """
@@ -42,6 +43,22 @@ public class SendMessageService(
         }
         """;
 
+    private static string BuildSystemPrompt(Event @event)
+    {
+        var context = new System.Text.StringBuilder();
+        context.AppendLine(BaseSystemPrompt);
+        context.AppendLine();
+        context.AppendLine("Aktueller Stand der Veranstaltung:");
+        context.AppendLine($"- Titel: {(!string.IsNullOrWhiteSpace(@event.Title) ? @event.Title : "(noch leer)")}");
+        context.AppendLine($"- Adresse: {(!string.IsNullOrWhiteSpace(@event.Address) ? @event.Address : "(noch leer)")}");
+        context.AppendLine($"- Beschreibung: {(!string.IsNullOrWhiteSpace(@event.Description) ? @event.Description : "(noch leer)")}");
+        context.AppendLine($"- Beginn: {(@event.StartTime.HasValue ? @event.StartTime.Value.ToString("O", System.Globalization.CultureInfo.InvariantCulture) : "(noch leer)")}");
+        context.AppendLine($"- Ende: {(@event.EndTime.HasValue ? @event.EndTime.Value.ToString("O", System.Globalization.CultureInfo.InvariantCulture) : "(noch leer)")}");
+        context.AppendLine();
+        context.AppendLine("Gib in deiner Antwort immer alle bereits bekannten Felder zurück, zusammen mit neuen oder geänderten Informationen.");
+        return context.ToString();
+    }
+
     public async Task<ErrorOr<SendMessageResponse>> SendMessageAsync(
         SendMessageInput input, CancellationToken cancellationToken = default)
     {
@@ -58,38 +75,62 @@ public class SendMessageService(
             .ToList();
 
         var jsonReply = await aiChatService.GetStructuredReplyAsync(
-            SystemPrompt, JsonSchema, history, cancellationToken);
+            BuildSystemPrompt(@event), JsonSchema, history, cancellationToken);
 
-        var aiResponse = JsonSerializer.Deserialize<EventAiResponse>(jsonReply)
-            ?? throw new InvalidOperationException("AI returned unparseable JSON.");
-
-        DateTime? parsedStart = aiResponse.StartTime is not null
-            ? DateTime.Parse(aiResponse.StartTime, null, DateTimeStyles.RoundtripKind).ToUniversalTime()
-            : null;
-        DateTime? parsedEnd = aiResponse.EndTime is not null
-            ? DateTime.Parse(aiResponse.EndTime, null, DateTimeStyles.RoundtripKind).ToUniversalTime()
-            : null;
-
-        if (aiResponse.Status == "ready")
+        EventAiResponse aiResponse;
+        try
         {
-            if (string.IsNullOrWhiteSpace(aiResponse.Title) ||
-                string.IsNullOrWhiteSpace(aiResponse.Address) ||
-                string.IsNullOrWhiteSpace(aiResponse.Description) ||
-                parsedStart is null ||
-                parsedEnd is null)
-            {
-                return EventErrors.IncompleteAiResponse();
-            }
-
-            @event.UpdateDetails(aiResponse.Title, aiResponse.Address, aiResponse.Description,
-                                 parsedStart.Value, parsedEnd.Value);
+            aiResponse = JsonSerializer.Deserialize<EventAiResponse>(jsonReply)
+                ?? throw new InvalidOperationException("AI returned unparseable JSON.");
+        }
+        catch (JsonException)
+        {
+            return EventErrors.AiParseError();
         }
 
+        DateTime? parsedStart = null;
+        DateTime? parsedEnd = null;
+
+        if (aiResponse.StartTime is not null)
+        {
+            if (!DateTime.TryParseExact(aiResponse.StartTime, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var start))
+                return EventErrors.AiParseError();
+            parsedStart = start.ToUniversalTime();
+        }
+
+        if (aiResponse.EndTime is not null)
+        {
+            if (!DateTime.TryParseExact(aiResponse.EndTime, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var end))
+                return EventErrors.AiParseError();
+            parsedEnd = end.ToUniversalTime();
+        }
+
+        if (string.IsNullOrWhiteSpace(aiResponse.Reply))
+            return EventErrors.AiParseError();
+
+        var newStatus = aiResponse.Status == "ready" ? EventStatus.ReadyToPublish : EventStatus.Draft;
+
+        @event.UpdateDetails(
+            title: aiResponse.Title,
+            address: aiResponse.Address,
+            description: aiResponse.Description,
+            startTime: parsedStart,
+            endTime: parsedEnd,
+            newStatus: newStatus);
+
         var userMessage = Message.Create(@event.ConversationId.Value, MessageRole.User, input.Content);
-        var botMessage = Message.Create(@event.ConversationId.Value, MessageRole.System, aiResponse.Reply);
+        var botMessage = Message.Create(@event.ConversationId.Value, MessageRole.Assistant, aiResponse.Reply);
 
         await messageRepository.CreateAsync(userMessage);
-        await eventRepository.UpdateDraftAsync(@event);
+        try
+        {
+            await eventRepository.UpdateDraftAsync(@event);
+        }
+        catch (Domain.Exceptions.ConcurrencyException)
+        {
+            return EventErrors.ConcurrencyConflict();
+        }
+        @event.IncrementVersion();
         await messageRepository.CreateAsync(botMessage);
 
         return new SendMessageResponse(

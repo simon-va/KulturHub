@@ -14,7 +14,7 @@ public class InitializeEventService(
     public async Task<ErrorOr<Guid>> InitializeEventAsync(InitializeEventInput input)
     {
         var conversation = Conversation.Create(input.OrganisationId);
-        var message = Message.Create(conversation.Id, MessageRole.System, "Neue Veranstaltung erstellt. Erzähl mir von ihr.");
+        var message = Message.Create(conversation.Id, MessageRole.Assistant, "Neue Veranstaltung erstellt. Erzähl mir von ihr.");
         var @event = Event.CreateDraft(input.OrganisationId, conversation.Id);
 
         await conversationRepository.CreateAsync(conversation);

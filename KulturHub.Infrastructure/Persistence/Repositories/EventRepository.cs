@@ -2,6 +2,7 @@ using Dapper;
 using KulturHub.Application.Ports;
 using KulturHub.Domain.Entities;
 using KulturHub.Domain.Enums;
+using KulturHub.Domain.Exceptions;
 using KulturHub.Domain.Interfaces;
 
 namespace KulturHub.Infrastructure.Persistence.Repositories;
@@ -15,13 +16,13 @@ public class EventRepository(
         DateTime? StartTime, DateTime? EndTime,
         string Address, string Description, DateTime CreatedAt,
         int Status, string? ErrorMessage,
-        Guid? EventCategoryId, Guid? ConversationId);
+        Guid? EventCategoryId, Guid? ConversationId, int Version);
 
     public async Task CreateAsync(Event @event)
     {
         const string sql = """
-            INSERT INTO events (id, organisation_id, title, start_time, end_time, address, description, created_at, status, error_message, event_category_id, conversation_id)
-            VALUES (@Id, @OrganisationId, @Title, @StartTime, @EndTime, @Address, @Description, @CreatedAt, @Status, @ErrorMessage, @EventCategoryId, @ConversationId)
+            INSERT INTO events (id, organisation_id, title, start_time, end_time, address, description, created_at, status, error_message, event_category_id, conversation_id, event_version)
+            VALUES (@Id, @OrganisationId, @Title, @StartTime, @EndTime, @Address, @Description, @CreatedAt, @Status, @ErrorMessage, @EventCategoryId, @ConversationId, @Version)
             """;
 
         await connectionProvider.Connection.ExecuteAsync(sql, new
@@ -38,6 +39,7 @@ public class EventRepository(
             @event.ErrorMessage,
             @event.EventCategoryId,
             @event.ConversationId,
+            @event.Version,
         }, connectionProvider.Transaction);
     }
 
@@ -55,7 +57,8 @@ public class EventRepository(
                    status           AS Status,
                    error_message    AS ErrorMessage,
                    event_category_id AS EventCategoryId,
-                   conversation_id  AS ConversationId
+                   conversation_id  AS ConversationId,
+                   event_version    AS Version
             FROM events
             WHERE organisation_id = @OrganisationId
             ORDER BY created_at DESC
@@ -69,7 +72,7 @@ public class EventRepository(
             r.StartTime, r.EndTime,
             r.Address, r.Description, r.CreatedAt,
             (EventStatus)r.Status, r.ErrorMessage,
-            r.EventCategoryId, r.ConversationId));
+            r.EventCategoryId, r.ConversationId, r.Version));
     }
 
     public async Task UpdateDraftAsync(Event @event)
@@ -81,11 +84,12 @@ public class EventRepository(
                 description = @Description,
                 start_time  = @StartTime,
                 end_time    = @EndTime,
-                status      = @Status
-            WHERE id = @Id
+                status      = @Status,
+                event_version = event_version + 1
+            WHERE id = @Id AND event_version = @Version
             """;
 
-        await connectionProvider.Connection.ExecuteAsync(sql, new
+        var rows = await connectionProvider.Connection.ExecuteAsync(sql, new
         {
             @event.Id,
             @event.Title,
@@ -94,7 +98,11 @@ public class EventRepository(
             @event.StartTime,
             @event.EndTime,
             Status = (int)@event.Status,
+            @event.Version,
         }, connectionProvider.Transaction);
+
+        if (rows == 0)
+            throw new ConcurrencyException("Event was modified by another request.");
     }
 
     public async Task UpdateStatusAsync(Event @event)
@@ -140,7 +148,8 @@ public class EventRepository(
                    status           AS Status,
                    error_message    AS ErrorMessage,
                    event_category_id AS EventCategoryId,
-                   conversation_id  AS ConversationId
+                   conversation_id  AS ConversationId,
+                   event_version    AS Version
             FROM events
             WHERE id = @EventId AND organisation_id = @OrganisationId
             """;
@@ -154,6 +163,6 @@ public class EventRepository(
             row.StartTime, row.EndTime,
             row.Address, row.Description, row.CreatedAt,
             (EventStatus)row.Status, row.ErrorMessage,
-            row.EventCategoryId, row.ConversationId);
+            row.EventCategoryId, row.ConversationId, row.Version);
     }
 }
