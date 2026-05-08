@@ -87,7 +87,7 @@ public static class EventEndpoints
                 errors => errors.ToResult());
         })
         .RequireAuthorization()
-        .Produces<MessageResponse>(StatusCodes.Status200OK)
+        .Produces<SendMessageResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound);

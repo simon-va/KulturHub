@@ -43,7 +43,7 @@ public class SendMessageService(
         }
         """;
 
-    public async Task<ErrorOr<MessageResponse>> SendMessageAsync(
+    public async Task<ErrorOr<SendMessageResponse>> SendMessageAsync(
         SendMessageInput input, CancellationToken cancellationToken = default)
     {
         var isMember = await organisationRepository.IsMemberAsync(input.OrganisationId, input.UserId);
@@ -87,6 +87,8 @@ public class SendMessageService(
         await messageRepository.CreateAsync(botMessage);
         await unitOfWork.CommitAsync();
 
-        return new MessageResponse(botMessage.Id, botMessage.Role, botMessage.Content, botMessage.CreatedAt);
+        return new SendMessageResponse(
+            new MessageResponse(userMessage.Id, userMessage.Role, userMessage.Content, userMessage.CreatedAt),
+            new MessageResponse(botMessage.Id, botMessage.Role, botMessage.Content, botMessage.CreatedAt));
     }
 }

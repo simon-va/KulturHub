@@ -5,5 +5,5 @@ namespace KulturHub.Application.Features.Events.SendMessage;
 
 public interface ISendMessageService
 {
-    Task<ErrorOr<MessageResponse>> SendMessageAsync(SendMessageInput input, CancellationToken cancellationToken = default);
+    Task<ErrorOr<SendMessageResponse>> SendMessageAsync(SendMessageInput input, CancellationToken cancellationToken = default);
 }
