@@ -1,6 +1,7 @@
 using FluentValidation;
 using KulturHub.Application.Features.Auth;
 using KulturHub.Application.Features.Auth.SignUp;
+using KulturHub.Application.Features.Events.DeleteEvent;
 using KulturHub.Application.Features.Events.GetConversation;
 using KulturHub.Application.Features.Events.GetEvent;
 using KulturHub.Application.Features.Events.GetEvents;
@@ -36,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ICreateInvitationService, CreateInvitationService>();
         services.AddScoped<IUpdateEventStatusService, UpdateEventStatusService>();
+        services.AddScoped<IDeleteEventService, DeleteEventService>();
 
         return services;
     }

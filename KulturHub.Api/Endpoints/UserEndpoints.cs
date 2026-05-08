@@ -20,6 +20,8 @@ public static class UserEndpoints
         .RequireAuthorization()
         .Produces<UserResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status404NotFound);
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithName("User_GetUser")
+        .WithTags("User");
     }
 }

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using KulturHub.Api.Extensions;
 using KulturHub.Api.Requests;
 using KulturHub.Api.Responses;
+using KulturHub.Application.Features.Events.DeleteEvent;
 using KulturHub.Application.Features.Events.GetConversation;
 using KulturHub.Application.Features.Events.GetEvent;
 using KulturHub.Application.Features.Events.GetEvents;
@@ -31,7 +32,9 @@ public static class EventEndpoints
         .RequireAuthorization()
         .Produces<IEnumerable<EventResponse>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status403Forbidden);
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .WithName("Event_GetEvents")
+        .WithTags("Event");
 
         app.MapGet("/organisations/{organisationId:guid}/events/{eventId:guid}", async (
             Guid organisationId,
@@ -51,7 +54,9 @@ public static class EventEndpoints
         .Produces<EventResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
-        .ProducesProblem(StatusCodes.Status404NotFound);
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithName("Event_GetEventById")
+        .WithTags("Event");
 
         app.MapPost("/organisations/{organisationId:guid}/events/initialize", async (
             Guid organisationId,
@@ -69,7 +74,9 @@ public static class EventEndpoints
         .RequireAuthorization()
         .Produces<CreatedResponse>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status403Forbidden);
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .WithName("Event_InitializeEvent")
+        .WithTags("Event");
 
         app.MapGet("/organisations/{organisationId:guid}/events/{eventId:guid}/conversation", async (
             Guid organisationId,
@@ -89,7 +96,9 @@ public static class EventEndpoints
         .Produces<ConversationResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
-        .ProducesProblem(StatusCodes.Status404NotFound);
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithName("Event_GetEventConversation")
+        .WithTags("Event");
 
         app.MapPost("/organisations/{organisationId:guid}/events/{eventId:guid}/conversation/messages", async (
             Guid organisationId,
@@ -112,7 +121,31 @@ public static class EventEndpoints
         .Produces<SendMessageResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
-        .ProducesProblem(StatusCodes.Status404NotFound);
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithName("Event_SendEventMessage")
+        .WithTags("Event");
+
+        app.MapDelete("/organisations/{organisationId:guid}/events/{eventId:guid}", async (
+            Guid organisationId,
+            Guid eventId,
+            ClaimsPrincipal user,
+            IDeleteEventService deleteEventService) =>
+        {
+            var userId = user.GetUserId();
+            var result = await deleteEventService.DeleteEventAsync(
+                new DeleteEventInput(organisationId, eventId, userId));
+
+            return result.Match(
+                _ => Results.NoContent(),
+                errors => errors.ToResult());
+        })
+        .RequireAuthorization()
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithName("Event_DeleteEvent")
+        .WithTags("Event");
 
         app.MapPatch("/organisations/{organisationId:guid}/events/{eventId:guid}/status", async (
             Guid organisationId,
@@ -134,6 +167,8 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesValidationProblem();
+        .ProducesValidationProblem()
+        .WithName("Event_UpdateEventStatus")
+        .WithTags("Event");
     }
 }

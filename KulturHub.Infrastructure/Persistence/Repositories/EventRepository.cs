@@ -113,6 +113,19 @@ public class EventRepository(
         }, connectionProvider.Transaction);
     }
 
+    public async Task<bool> DeleteAsync(Guid eventId, Guid organisationId)
+    {
+        const string sql = """
+            DELETE FROM events
+            WHERE id = @EventId AND organisation_id = @OrganisationId
+            """;
+
+        var rows = await connectionProvider.Connection.ExecuteAsync(sql,
+            new { EventId = eventId, OrganisationId = organisationId },
+            connectionProvider.Transaction);
+        return rows > 0;
+    }
+
     public async Task<Event?> GetByIdAsync(Guid eventId, Guid organisationId)
     {
         const string sql = """

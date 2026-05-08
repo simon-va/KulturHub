@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using KulturHub.Api.Endpoints;
 using KulturHub.Application;
 using KulturHub.Infrastructure;
@@ -9,6 +10,11 @@ using Microsoft.OpenApi;
 JsonWebTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 builder.Services.AddOpenApi(options =>
 {

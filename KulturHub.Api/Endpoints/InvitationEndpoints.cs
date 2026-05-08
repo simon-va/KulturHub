@@ -22,6 +22,8 @@ public static class InvitationEndpoints
         .RequireAuthorization()
         .Produces<CreateInvitationResponse>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status403Forbidden);
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .WithName("Invitation_CreateInvitation")
+        .WithTags("Invitation");
     }
 }

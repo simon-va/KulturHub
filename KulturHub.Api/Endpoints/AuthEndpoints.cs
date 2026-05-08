@@ -20,6 +20,8 @@ public static class AuthEndpoints
         })
         .Produces<AuthResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status409Conflict);
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .WithName("Auth_SignUp")
+        .WithTags("Auth");
     }
 }

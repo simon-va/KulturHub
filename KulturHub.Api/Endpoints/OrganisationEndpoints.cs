@@ -21,7 +21,9 @@ public static class OrganisationEndpoints
         })
         .RequireAuthorization()
         .Produces<IEnumerable<OrganisationResponse>>(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status401Unauthorized);
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .WithName("Organisation_GetOrganisations")
+        .WithTags("Organisation");
 
         app.MapPost("/organisations", async (CreateOrganisationRequest req, ClaimsPrincipal user, IOrganisationService organisationService) =>
         {
@@ -35,7 +37,9 @@ public static class OrganisationEndpoints
         .RequireAuthorization()
         .Produces<CreatedResponse>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status401Unauthorized);
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .WithName("Organisation_CreateOrganisation")
+        .WithTags("Organisation");
 
         app.MapPut("/organisations/{id:guid}", async (Guid id, UpdateOrganisationRequest req, ClaimsPrincipal user, IOrganisationService organisationService) =>
         {
@@ -51,7 +55,9 @@ public static class OrganisationEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
-        .ProducesProblem(StatusCodes.Status404NotFound);
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithName("Organisation_UpdateOrganisation")
+        .WithTags("Organisation");
 
         app.MapDelete("/organisations/{id:guid}", async (Guid id, ClaimsPrincipal user, IOrganisationService organisationService) =>
         {
@@ -66,6 +72,8 @@ public static class OrganisationEndpoints
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
-        .ProducesProblem(StatusCodes.Status404NotFound);
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithName("Organisation_DeleteOrganisation")
+        .WithTags("Organisation");
     }
 }

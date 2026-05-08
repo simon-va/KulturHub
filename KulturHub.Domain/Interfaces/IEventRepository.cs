@@ -9,4 +9,5 @@ public interface IEventRepository
     Task<Event?> GetByIdAsync(Guid eventId, Guid organisationId);
     Task UpdateDraftAsync(Event @event);
     Task UpdateStatusAsync(Event @event);
+    Task<bool> DeleteAsync(Guid eventId, Guid organisationId);
 }
