@@ -9,4 +9,7 @@ public static class EventErrors
 
     public static Error NoConversation(Guid id) =>
         Error.NotFound("Event.NoConversation", $"Event with id '{id}' has no conversation.");
+
+    public static Error InvalidStatus() =>
+        Error.Validation("Event.InvalidStatus", "The 'Failed' status cannot be set directly.");
 }

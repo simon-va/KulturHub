@@ -24,6 +24,7 @@ public class SendMessageService(
         Setze "status" auf "ready", wenn alle fünf Felder vollständig und plausibel sind (Ende muss nach Beginn liegen).
         Gib Beginn und Ende im ISO-8601-Format zurück, z.B. "2025-07-12T18:00:00".
         Felder, die noch nicht bekannt sind, lasse im JSON weg.
+        Wenn alle benötigten Felder mit Daten gefüllt sind, kannst du dem Nutzer Bescheid geben, dass er die Veranstaltung veröffentlichen kann.
         """;
 
     private const string JsonSchema = """

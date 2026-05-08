@@ -8,4 +8,5 @@ public interface IEventRepository
     Task<IEnumerable<Event>> GetByOrganisationIdAsync(Guid organisationId);
     Task<Event?> GetByIdAsync(Guid eventId, Guid organisationId);
     Task UpdateDraftAsync(Event @event);
+    Task UpdateStatusAsync(Event @event);
 }

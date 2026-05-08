@@ -97,6 +97,22 @@ public class EventRepository(
         }, connectionProvider.Transaction);
     }
 
+    public async Task UpdateStatusAsync(Event @event)
+    {
+        const string sql = """
+            UPDATE events
+            SET status = @Status
+            WHERE id = @Id AND organisation_id = @OrganisationId
+            """;
+
+        await connectionProvider.Connection.ExecuteAsync(sql, new
+        {
+            @event.Id,
+            @event.OrganisationId,
+            Status = (int)@event.Status,
+        }, connectionProvider.Transaction);
+    }
+
     public async Task<Event?> GetByIdAsync(Guid eventId, Guid organisationId)
     {
         const string sql = """

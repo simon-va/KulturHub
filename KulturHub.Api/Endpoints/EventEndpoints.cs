@@ -3,9 +3,11 @@ using KulturHub.Api.Extensions;
 using KulturHub.Api.Requests;
 using KulturHub.Api.Responses;
 using KulturHub.Application.Features.Events.GetConversation;
+using KulturHub.Application.Features.Events.GetEvent;
 using KulturHub.Application.Features.Events.GetEvents;
 using KulturHub.Application.Features.Events.InitializeEvent;
 using KulturHub.Application.Features.Events.SendMessage;
+using KulturHub.Application.Features.Events.UpdateEventStatus;
 
 namespace KulturHub.Api.Endpoints;
 
@@ -30,6 +32,26 @@ public static class EventEndpoints
         .Produces<IEnumerable<EventResponse>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        app.MapGet("/organisations/{organisationId:guid}/events/{eventId:guid}", async (
+            Guid organisationId,
+            Guid eventId,
+            ClaimsPrincipal user,
+            IGetEventService getEventService) =>
+        {
+            var userId = user.GetUserId();
+            var result = await getEventService.GetEventAsync(
+                new GetEventInput(organisationId, eventId, userId));
+
+            return result.Match(
+                @event => Results.Ok(@event),
+                errors => errors.ToResult());
+        })
+        .RequireAuthorization()
+        .Produces<EventResponse>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound);
 
         app.MapPost("/organisations/{organisationId:guid}/events/initialize", async (
             Guid organisationId,
@@ -91,5 +113,27 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound);
+
+        app.MapPatch("/organisations/{organisationId:guid}/events/{eventId:guid}/status", async (
+            Guid organisationId,
+            Guid eventId,
+            UpdateEventStatusRequest body,
+            ClaimsPrincipal user,
+            IUpdateEventStatusService updateEventStatusService) =>
+        {
+            var userId = user.GetUserId();
+            var result = await updateEventStatusService.UpdateEventStatusAsync(
+                new UpdateEventStatusInput(organisationId, eventId, userId, body.Status));
+
+            return result.Match(
+                _ => Results.NoContent(),
+                errors => errors.ToResult());
+        })
+        .RequireAuthorization()
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesValidationProblem();
     }
 }
