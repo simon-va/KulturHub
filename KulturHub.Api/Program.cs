@@ -70,10 +70,19 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler(errApp =>
 {
-    errApp.Run(context =>
+    errApp.Run(async context =>
     {
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        return Task.CompletedTask;
+        context.Response.ContentType = "application/problem+json";
+
+        var problemDetails = new Microsoft.AspNetCore.Mvc.ProblemDetails
+        {
+            Title = "An unexpected error occurred",
+            Status = StatusCodes.Status500InternalServerError,
+            Instance = context.Request.Path,
+        };
+
+        await context.Response.WriteAsJsonAsync(problemDetails);
     });
 });
 

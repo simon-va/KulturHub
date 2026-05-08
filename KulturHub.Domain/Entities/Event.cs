@@ -1,4 +1,5 @@
 using KulturHub.Domain.Enums;
+using KulturHub.Domain.Exceptions;
 
 namespace KulturHub.Domain.Entities;
 
@@ -17,17 +18,38 @@ public class Event
     public Guid? EventCategoryId { get; private set; }
     public Guid? ConversationId { get; private set; }
 
-    public void SetStatus(EventStatus status) => Status = status;
-
-    public void UpdateDraft(string? title, string? address, string? description,
-                            DateTime? startTime, DateTime? endTime, EventStatus status)
+    public void UpdateDetails(string title, string address, string description,
+                              DateTime startTime, DateTime endTime)
     {
-        if (title is not null) Title = title;
-        if (address is not null) Address = address;
-        if (description is not null) Description = description;
-        if (startTime is not null) StartTime = startTime;
-        if (endTime is not null) EndTime = endTime;
-        Status = status;
+        if (string.IsNullOrWhiteSpace(title))
+            throw new DomainException("Title is required.");
+        if (endTime <= startTime)
+            throw new DomainException("End time must be after start time.");
+        if (Status == EventStatus.Published)
+            throw new DomainException("Cannot modify a published event.");
+
+        Title = title;
+        Address = address;
+        Description = description;
+        StartTime = startTime;
+        EndTime = endTime;
+        Status = EventStatus.ReadyToPublish;
+    }
+
+    public void Publish()
+    {
+        if (Status != EventStatus.ReadyToPublish)
+            throw new DomainException("Only ready events can be published.");
+
+        Status = EventStatus.Published;
+    }
+
+    public void MarkReadyToPublish()
+    {
+        if (Status != EventStatus.Draft)
+            throw new DomainException("Only draft events can be marked as ready.");
+
+        Status = EventStatus.ReadyToPublish;
     }
 
     public void SetFailed(string errorMessage)

@@ -5,16 +5,10 @@ using KulturHub.Domain.Interfaces;
 
 namespace KulturHub.Application.Features.Events.GetEvent;
 
-public class GetEventService(
-    IOrganisationRepository organisationRepository,
-    IEventRepository eventRepository) : IGetEventService
+public class GetEventService(IEventRepository eventRepository) : IGetEventService
 {
     public async Task<ErrorOr<EventResponse>> GetEventAsync(GetEventInput input)
     {
-        var isMember = await organisationRepository.IsMemberAsync(input.OrganisationId, input.UserId);
-        if (!isMember)
-            return OrganisationErrors.Forbidden();
-
         var @event = await eventRepository.GetByIdAsync(input.EventId, input.OrganisationId);
         if (@event is null)
             return EventErrors.NotFound(input.EventId);

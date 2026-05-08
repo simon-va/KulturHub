@@ -11,11 +11,9 @@ using KulturHub.Domain.Interfaces;
 namespace KulturHub.Application.Features.Events.SendMessage;
 
 public class SendMessageService(
-    IOrganisationRepository organisationRepository,
     IEventRepository eventRepository,
     IMessageRepository messageRepository,
-    IAiChatService aiChatService,
-    IUnitOfWork unitOfWork) : ISendMessageService
+    IAiChatService aiChatService) : ISendMessageService
 {
     private const string SystemPrompt = """
         Du bist ein freundlicher Assistent, der Vereinsvertretern hilft, ihre Veranstaltung für den Kulturkalender zu erfassen.
@@ -47,9 +45,6 @@ public class SendMessageService(
     public async Task<ErrorOr<SendMessageResponse>> SendMessageAsync(
         SendMessageInput input, CancellationToken cancellationToken = default)
     {
-        var isMember = await organisationRepository.IsMemberAsync(input.OrganisationId, input.UserId);
-        if (!isMember) return OrganisationErrors.Forbidden();
-
         var @event = await eventRepository.GetByIdAsync(input.EventId, input.OrganisationId);
         if (@event is null) return EventErrors.NotFound(input.EventId);
         if (@event.ConversationId is null) return EventErrors.NoConversation(input.EventId);
@@ -75,18 +70,27 @@ public class SendMessageService(
             ? DateTime.Parse(aiResponse.EndTime, null, DateTimeStyles.RoundtripKind).ToUniversalTime()
             : null;
 
-        var newStatus = aiResponse.Status == "ready" ? EventStatus.ReadyToPublish : EventStatus.Draft;
-        @event.UpdateDraft(aiResponse.Title, aiResponse.Address, aiResponse.Description,
-                           parsedStart, parsedEnd, newStatus);
+        if (aiResponse.Status == "ready")
+        {
+            if (string.IsNullOrWhiteSpace(aiResponse.Title) ||
+                string.IsNullOrWhiteSpace(aiResponse.Address) ||
+                string.IsNullOrWhiteSpace(aiResponse.Description) ||
+                parsedStart is null ||
+                parsedEnd is null)
+            {
+                return EventErrors.IncompleteAiResponse();
+            }
+
+            @event.UpdateDetails(aiResponse.Title, aiResponse.Address, aiResponse.Description,
+                                 parsedStart.Value, parsedEnd.Value);
+        }
 
         var userMessage = Message.Create(@event.ConversationId.Value, MessageRole.User, input.Content);
         var botMessage = Message.Create(@event.ConversationId.Value, MessageRole.System, aiResponse.Reply);
 
-        await unitOfWork.BeginAsync();
         await messageRepository.CreateAsync(userMessage);
         await eventRepository.UpdateDraftAsync(@event);
         await messageRepository.CreateAsync(botMessage);
-        await unitOfWork.CommitAsync();
 
         return new SendMessageResponse(
             new MessageResponse(userMessage.Id, userMessage.Role, userMessage.Content, userMessage.CreatedAt),

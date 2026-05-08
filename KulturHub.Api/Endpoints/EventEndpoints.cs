@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using KulturHub.Api.Extensions;
+using KulturHub.Api.Filters;
 using KulturHub.Api.Requests;
 using KulturHub.Api.Responses;
 using KulturHub.Application.Features.Events.DeleteEvent;
@@ -18,12 +19,10 @@ public static class EventEndpoints
     {
         app.MapGet("/organisations/{organisationId:guid}/events", async (
             Guid organisationId,
-            ClaimsPrincipal user,
             IGetEventsService getEventsService) =>
         {
-            var userId = user.GetUserId();
             var result = await getEventsService.GetEventsAsync(
-                new GetEventsInput(organisationId, userId));
+                new GetEventsInput(organisationId));
 
             return result.Match(
                 events => Results.Ok(events),
@@ -33,18 +32,17 @@ public static class EventEndpoints
         .Produces<IEnumerable<EventResponse>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
+        .RequireOrganisationMembership()
         .WithName("Event_GetEvents")
         .WithTags("Event");
 
         app.MapGet("/organisations/{organisationId:guid}/events/{eventId:guid}", async (
             Guid organisationId,
             Guid eventId,
-            ClaimsPrincipal user,
             IGetEventService getEventService) =>
         {
-            var userId = user.GetUserId();
             var result = await getEventService.GetEventAsync(
-                new GetEventInput(organisationId, eventId, userId));
+                new GetEventInput(organisationId, eventId));
 
             return result.Match(
                 @event => Results.Ok(@event),
@@ -55,17 +53,16 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .RequireOrganisationMembership()
         .WithName("Event_GetEventById")
         .WithTags("Event");
 
         app.MapPost("/organisations/{organisationId:guid}/events/initialize", async (
             Guid organisationId,
-            ClaimsPrincipal user,
             IInitializeEventService initializeEventService) =>
         {
-            var userId = user.GetUserId();
             var result = await initializeEventService.InitializeEventAsync(
-                new InitializeEventInput(organisationId, userId));
+                new InitializeEventInput(organisationId));
 
             return result.Match(
                 id => Results.Created($"/events/{id}", new CreatedResponse(id)),
@@ -75,18 +72,18 @@ public static class EventEndpoints
         .Produces<CreatedResponse>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
+        .WithUnitOfWork()
+        .RequireOrganisationMembership()
         .WithName("Event_InitializeEvent")
         .WithTags("Event");
 
         app.MapGet("/organisations/{organisationId:guid}/events/{eventId:guid}/conversation", async (
             Guid organisationId,
             Guid eventId,
-            ClaimsPrincipal user,
             IGetConversationService getConversationService) =>
         {
-            var userId = user.GetUserId();
             var result = await getConversationService.GetConversationAsync(
-                new GetConversationInput(organisationId, eventId, userId));
+                new GetConversationInput(organisationId, eventId));
 
             return result.Match(
                 conversation => Results.Ok(conversation),
@@ -97,6 +94,7 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .RequireOrganisationMembership()
         .WithName("Event_GetEventConversation")
         .WithTags("Event");
 
@@ -104,13 +102,11 @@ public static class EventEndpoints
             Guid organisationId,
             Guid eventId,
             SendMessageRequest body,
-            ClaimsPrincipal user,
             ISendMessageService sendMessageService,
             CancellationToken cancellationToken) =>
         {
-            var userId = user.GetUserId();
             var result = await sendMessageService.SendMessageAsync(
-                new SendMessageInput(organisationId, eventId, userId, body.Content),
+                new SendMessageInput(organisationId, eventId, body.Content),
                 cancellationToken);
 
             return result.Match(
@@ -122,18 +118,18 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithUnitOfWork()
+        .RequireOrganisationMembership()
         .WithName("Event_SendEventMessage")
         .WithTags("Event");
 
         app.MapDelete("/organisations/{organisationId:guid}/events/{eventId:guid}", async (
             Guid organisationId,
             Guid eventId,
-            ClaimsPrincipal user,
             IDeleteEventService deleteEventService) =>
         {
-            var userId = user.GetUserId();
             var result = await deleteEventService.DeleteEventAsync(
-                new DeleteEventInput(organisationId, eventId, userId));
+                new DeleteEventInput(organisationId, eventId));
 
             return result.Match(
                 _ => Results.NoContent(),
@@ -144,6 +140,8 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithUnitOfWork()
+        .RequireOrganisationMembership()
         .WithName("Event_DeleteEvent")
         .WithTags("Event");
 
@@ -151,12 +149,10 @@ public static class EventEndpoints
             Guid organisationId,
             Guid eventId,
             UpdateEventStatusRequest body,
-            ClaimsPrincipal user,
             IUpdateEventStatusService updateEventStatusService) =>
         {
-            var userId = user.GetUserId();
             var result = await updateEventStatusService.UpdateEventStatusAsync(
-                new UpdateEventStatusInput(organisationId, eventId, userId, body.Status));
+                new UpdateEventStatusInput(organisationId, eventId, body.Status));
 
             return result.Match(
                 _ => Results.NoContent(),
@@ -168,6 +164,8 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesValidationProblem()
+        .WithUnitOfWork()
+        .RequireOrganisationMembership()
         .WithName("Event_UpdateEventStatus")
         .WithTags("Event");
     }
