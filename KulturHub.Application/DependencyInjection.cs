@@ -6,6 +6,7 @@ using KulturHub.Application.Features.Events.GetConversation;
 using KulturHub.Application.Features.Events.GetEvent;
 using KulturHub.Application.Features.Events.GetEventCategories;
 using KulturHub.Application.Features.Events.GetEvents;
+using KulturHub.Application.Features.Events.GetEventsOverview;
 using KulturHub.Application.Features.Events.InitializeEvent;
 using KulturHub.Application.Features.Events.SendMessage;
 using KulturHub.Application.Features.Events.UpdateEventStatus;
@@ -28,6 +29,7 @@ public static class DependencyInjection
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IGetEventsService, GetEventsService>();
+        services.AddScoped<IGetEventsOverviewService, GetEventsOverviewService>();
         services.AddScoped<IGetEventService, GetEventService>();
         services.AddScoped<IGetEventCategoriesService, GetEventCategoriesService>();
         services.AddScoped<IInitializeEventService, InitializeEventService>();

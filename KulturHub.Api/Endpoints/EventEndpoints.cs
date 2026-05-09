@@ -8,6 +8,7 @@ using KulturHub.Application.Features.Events.GetConversation;
 using KulturHub.Application.Features.Events.GetEvent;
 using KulturHub.Application.Features.Events.GetEventCategories;
 using KulturHub.Application.Features.Events.GetEvents;
+using KulturHub.Application.Features.Events.GetEventsOverview;
 using KulturHub.Application.Features.Events.InitializeEvent;
 using KulturHub.Application.Features.Events.SendMessage;
 using KulturHub.Application.Features.Events.UpdateEventStatus;
@@ -29,6 +30,25 @@ public static class EventEndpoints
         })
         .Produces<IEnumerable<EventCategoryResponse>>(StatusCodes.Status200OK)
         .WithName("Event_GetEventCategories")
+        .WithTags("Event");
+
+        app.MapGet("/organisations/{organisationId:guid}/events/overview", async (
+            Guid organisationId,
+            IGetEventsOverviewService getEventsOverviewService) =>
+        {
+            var result = await getEventsOverviewService.GetEventsOverviewAsync(
+                new GetEventsOverviewInput(organisationId));
+
+            return result.Match(
+                events => Results.Ok(events),
+                errors => errors.ToResult());
+        })
+        .RequireAuthorization()
+        .Produces<IEnumerable<EventOverviewResponse>>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .RequireOrganisationMembership()
+        .WithName("Event_GetEventsOverview")
         .WithTags("Event");
 
         app.MapGet("/organisations/{organisationId:guid}/events", async (
