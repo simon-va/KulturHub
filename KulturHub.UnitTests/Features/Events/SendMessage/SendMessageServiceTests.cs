@@ -31,6 +31,8 @@ public class SendMessageServiceTests
     // - Status transition requires category_id when AI signals ready
     // - Bare ISO datetimes (no offset) are interpreted as Europe/Berlin local time and converted to UTC
     // - Datetimes with explicit UTC offset (Z or +xx:xx) are parsed directly as UTC
+    // - When AI returns only status and reply: event fields remain unchanged
+    // - When AI returns only a single field: only that field is updated, others remain unchanged
 
     private readonly Mock<IEventRepository> _eventRepositoryMock = new();
     private readonly Mock<IMessageRepository> _messageRepositoryMock = new();
@@ -103,7 +105,7 @@ public class SendMessageServiceTests
             end_time = end.ToString("O"),
             category_id = "1",
             status = "ready",
-            reply = "All set!"
+            reply = "All set!",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -131,8 +133,14 @@ public class SendMessageServiceTests
             EventStatus.ReadyToPublish, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
+            category_id = (string?)null,
             status = "incomplete",
-            reply = "Need more info"
+            reply = "Need more info",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -174,9 +182,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
             start_time = "invalid-date",
+            end_time = (string?)null,
+            category_id = (string?)null,
             status = "incomplete",
-            reply = "Need date"
+            reply = "Need date",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -199,8 +212,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
+            category_id = (string?)null,
             status = "incomplete",
-            reply = ""
+            reply = "",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -224,12 +243,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
             description = "Description",
             start_time = "2026-07-20T13:00:00",
             end_time = "2026-07-20T15:00:00",
             category_id = "1",
             status = "ready",
-            reply = "All set!"
+            reply = "All set!",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -255,12 +276,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
             description = "Description",
             start_time = "2027-01-15T13:00:00",
             end_time = "2027-01-15T15:00:00",
             category_id = "1",
             status = "ready",
-            reply = "All set!"
+            reply = "All set!",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -286,12 +309,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
             description = "Description",
             start_time = "2026-07-20T11:00:00Z",
             end_time = "2026-07-20T13:00:00Z",
             category_id = "1",
             status = "ready",
-            reply = "All set!"
+            reply = "All set!",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -320,10 +345,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
             description = "Description",
+            start_time = (string?)null,
+            end_time = (string?)null,
             category_id = "1",
             status = "ready",
-            reply = "All set!"
+            reply = "All set!",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -351,8 +380,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
+            category_id = (string?)null,
             status = "ready",
-            reply = "Ready!"
+            reply = "Ready!",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -377,8 +412,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
+            category_id = (string?)null,
             status = "incomplete",
-            reply = "Got it!"
+            reply = "Got it!",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -410,8 +451,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
+            category_id = (string?)null,
             status = "incomplete",
-            reply = "Need more info"
+            reply = "Need more info",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -435,8 +482,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
+            category_id = (string?)null,
             status = "incomplete",
-            reply = "Need more info"
+            reply = "Need more info",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -460,9 +513,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
             category_id = "2",
             status = "ready",
-            reply = "Ready!"
+            reply = "Ready!",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -488,9 +546,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
             category_id = "999",
             status = "ready",
-            reply = "Ready!"
+            reply = "Ready!",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -515,9 +578,14 @@ public class SendMessageServiceTests
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
             category_id = "1",
             status = "incomplete",
-            reply = "Got the category!"
+            reply = "Got the category!",
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
@@ -528,6 +596,85 @@ public class SendMessageServiceTests
 
         result.IsError.Should().BeFalse();
         @event.Status.Should().Be(EventStatus.Draft);
+        @event.EventCategoryId.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenAiReturnsOnlyStatusAndReply_ShouldLeaveEventFieldsUnchanged()
+    {
+        var conversationId = Guid.NewGuid();
+        var input = new SendMessageInput(Guid.NewGuid(), Guid.NewGuid(), "Hello");
+        var start = DateTime.UtcNow.AddDays(1);
+        var end = DateTime.UtcNow.AddDays(2);
+        var @event = Event.Reconstitute(
+            input.EventId, input.OrganisationId, "Title",
+            start, end,
+            "Address", "Description", DateTime.UtcNow,
+            EventStatus.ReadyToPublish, null, 1, conversationId, 0);
+        var aiJson = JsonSerializer.Serialize(new
+        {
+            title = (string?)null,
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
+            category_id = (string?)null,
+            status = "incomplete",
+            reply = "Got it, still incomplete though",
+        });
+
+        _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
+        _messageRepositoryMock.Setup(x => x.GetByConversationIdAsync(conversationId)).ReturnsAsync([]);
+        _aiChatServiceMock.Setup(x => x.GetStructuredReplyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<AiMessage>>(), It.IsAny<CancellationToken>())).ReturnsAsync(aiJson);
+
+        var result = await _service.SendMessageAsync(input);
+
+        result.IsError.Should().BeFalse();
+        @event.Title.Should().Be("Title");
+        @event.Address.Should().Be("Address");
+        @event.Description.Should().Be("Description");
+        @event.StartTime.Should().Be(start);
+        @event.EndTime.Should().Be(end);
+        @event.EventCategoryId.Should().Be(1);
+        @event.Status.Should().Be(EventStatus.Draft);
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenAiReturnsOnlyTitle_ShouldUpdateOnlyTitle()
+    {
+        var conversationId = Guid.NewGuid();
+        var input = new SendMessageInput(Guid.NewGuid(), Guid.NewGuid(), "Neuer Titel");
+        var start = DateTime.UtcNow.AddDays(1);
+        var end = DateTime.UtcNow.AddDays(2);
+        var @event = Event.Reconstitute(
+            input.EventId, input.OrganisationId, "Old Title",
+            start, end,
+            "Address", "Description", DateTime.UtcNow,
+            EventStatus.Draft, null, 1, conversationId, 0);
+        var aiJson = JsonSerializer.Serialize(new
+        {
+            title = "New Title",
+            address = (string?)null,
+            description = (string?)null,
+            start_time = (string?)null,
+            end_time = (string?)null,
+            category_id = (string?)null,
+            status = "incomplete",
+            reply = "Titel angepasst!",
+        });
+
+        _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
+        _messageRepositoryMock.Setup(x => x.GetByConversationIdAsync(conversationId)).ReturnsAsync([]);
+        _aiChatServiceMock.Setup(x => x.GetStructuredReplyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<AiMessage>>(), It.IsAny<CancellationToken>())).ReturnsAsync(aiJson);
+
+        var result = await _service.SendMessageAsync(input);
+
+        result.IsError.Should().BeFalse();
+        @event.Title.Should().Be("New Title");
+        @event.Address.Should().Be("Address");
+        @event.Description.Should().Be("Description");
+        @event.StartTime.Should().Be(start);
+        @event.EndTime.Should().Be(end);
         @event.EventCategoryId.Should().Be(1);
     }
 }

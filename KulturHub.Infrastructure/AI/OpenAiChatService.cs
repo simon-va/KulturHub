@@ -1,12 +1,13 @@
 using KulturHub.Application.Ports;
+using Microsoft.Extensions.Configuration;
 using OpenAI;
 using OpenAI.Chat;
 
 namespace KulturHub.Infrastructure.AI;
 
-public class OpenAiChatService(OpenAIClient client) : IAiChatService
+public class OpenAiChatService(OpenAIClient client, IConfiguration configuration) : IAiChatService
 {
-    private const string Model = "gpt-4o-mini";
+    private string Model => configuration["OpenAI:Model"] ?? "gpt-4o";
 
     public async Task<string> GetStructuredReplyAsync(
         string systemPrompt,
@@ -28,7 +29,7 @@ public class OpenAiChatService(OpenAIClient client) : IAiChatService
             ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
                 jsonSchemaFormatName: "event_draft",
                 jsonSchema: BinaryData.FromString(jsonSchema),
-                jsonSchemaIsStrict: false)
+                jsonSchemaIsStrict: true)
         };
 
         var response = await client.GetChatClient(Model).CompleteChatAsync(messages, options, cancellationToken);
