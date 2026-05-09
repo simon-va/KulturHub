@@ -13,5 +13,5 @@ public record EventResponse(
     DateTime CreatedAt,
     EventStatus Status,
     string? ErrorMessage,
-    Guid? EventCategoryId,
+    int? EventCategoryId,
     Guid? ConversationId);

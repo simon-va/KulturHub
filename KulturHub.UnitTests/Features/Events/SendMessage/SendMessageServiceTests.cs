@@ -17,28 +17,42 @@ public class SendMessageServiceTests
     // Rules:
     // - When event not found: returns NotFound error
     // - When event has no conversation: returns NoConversation error
-    // - When AI returns valid ready response: updates event to ReadyToPublish, saves messages
+    // - When AI returns valid ready response with category: updates event to ReadyToPublish, saves messages
     // - When AI returns incomplete response: updates event to Draft, saves messages
     // - When AI returns unparseable JSON: returns AiParseError
     // - When AI returns invalid date format: returns AiParseError
     // - When AI returns empty reply: returns AiParseError
+    // - When AI returns ready without category: returns IncompleteAiResponse
+    // - When AI returns invalid category_id: returns AiParseError
     // - When concurrency conflict occurs: returns ConcurrencyConflict error
     // - Bot message is saved with Assistant role
     // - AI receives event context in system prompt (times shown in Europe/Berlin)
-    // - Status transition is based solely on AI's ready/incomplete flag
+    // - AI receives available categories in system prompt
+    // - Status transition requires category_id when AI signals ready
     // - Bare ISO datetimes (no offset) are interpreted as Europe/Berlin local time and converted to UTC
     // - Datetimes with explicit UTC offset (Z or +xx:xx) are parsed directly as UTC
 
     private readonly Mock<IEventRepository> _eventRepositoryMock = new();
     private readonly Mock<IMessageRepository> _messageRepositoryMock = new();
+    private readonly Mock<IEventCategoryRepository> _eventCategoryRepositoryMock = new();
     private readonly Mock<IAiChatService> _aiChatServiceMock = new();
     private readonly SendMessageService _service;
 
+    private static readonly List<EventCategory> DefaultCategories =
+    [
+        EventCategory.Reconstitute(1, "Konzert", "#FF0000"),
+        EventCategory.Reconstitute(2, "Theater", "#00FF00"),
+        EventCategory.Reconstitute(3, "Kunst", "#0000FF")
+    ];
+
     public SendMessageServiceTests()
     {
+        _eventCategoryRepositoryMock.Setup(x => x.GetAllAsync()).ReturnsAsync(DefaultCategories);
+
         _service = new SendMessageService(
             _eventRepositoryMock.Object,
             _messageRepositoryMock.Object,
+            _eventCategoryRepositoryMock.Object,
             _aiChatServiceMock.Object);
     }
 
@@ -87,6 +101,7 @@ public class SendMessageServiceTests
             description = "Description",
             start_time = start.ToString("O"),
             end_time = end.ToString("O"),
+            category_id = "1",
             status = "ready",
             reply = "All set!"
         });
@@ -212,6 +227,7 @@ public class SendMessageServiceTests
             description = "Description",
             start_time = "2026-07-20T13:00:00",
             end_time = "2026-07-20T15:00:00",
+            category_id = "1",
             status = "ready",
             reply = "All set!"
         });
@@ -242,6 +258,7 @@ public class SendMessageServiceTests
             description = "Description",
             start_time = "2027-01-15T13:00:00",
             end_time = "2027-01-15T15:00:00",
+            category_id = "1",
             status = "ready",
             reply = "All set!"
         });
@@ -272,6 +289,7 @@ public class SendMessageServiceTests
             description = "Description",
             start_time = "2026-07-20T11:00:00Z",
             end_time = "2026-07-20T13:00:00Z",
+            category_id = "1",
             status = "ready",
             reply = "All set!"
         });
@@ -303,6 +321,7 @@ public class SendMessageServiceTests
         var aiJson = JsonSerializer.Serialize(new
         {
             description = "Description",
+            category_id = "1",
             status = "ready",
             reply = "All set!"
         });
@@ -321,14 +340,14 @@ public class SendMessageServiceTests
     }
 
     [Fact]
-    public async Task SendMessageAsync_WhenAiReturnsReadyWithMissingFields_ShouldTrustAiAndSetReadyToPublish()
+    public async Task SendMessageAsync_WhenAiReturnsReadyWithoutCategory_ShouldReturnIncompleteAiResponse()
     {
         var conversationId = Guid.NewGuid();
         var input = new SendMessageInput(Guid.NewGuid(), Guid.NewGuid(), "Hello");
         var @event = Event.Reconstitute(
             input.EventId, input.OrganisationId, "Title",
             DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2),
-            "Address", "", DateTime.UtcNow,
+            "Address", "Description", DateTime.UtcNow,
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
@@ -342,8 +361,8 @@ public class SendMessageServiceTests
 
         var result = await _service.SendMessageAsync(input);
 
-        result.IsError.Should().BeFalse();
-        @event.Status.Should().Be(EventStatus.ReadyToPublish);
+        result.IsError.Should().BeTrue();
+        result.FirstError.Code.Should().Be("Event.IncompleteAiResponse");
     }
 
     [Fact]
@@ -376,6 +395,9 @@ public class SendMessageServiceTests
         capturedPrompt.Should().Contain("Existing Title");
         capturedPrompt.Should().Contain("Existing Address");
         capturedPrompt.Should().Contain("Existing Description");
+        capturedPrompt.Should().Contain("Konzert");
+        capturedPrompt.Should().Contain("Theater");
+        capturedPrompt.Should().Contain("Kunst");
     }
 
     [Fact]
@@ -427,25 +449,85 @@ public class SendMessageServiceTests
     }
 
     [Fact]
-    public async Task SendMessageAsync_ShouldIncrementVersionAfterSuccessfulUpdate()
+    public async Task SendMessageAsync_WhenAiReturnsValidCategoryId_ShouldUpdateEventCategory()
     {
         var conversationId = Guid.NewGuid();
         var input = new SendMessageInput(Guid.NewGuid(), Guid.NewGuid(), "Hello");
         var @event = Event.Reconstitute(
-            input.EventId, input.OrganisationId, "", null, null, "", "", DateTime.UtcNow,
+            input.EventId, input.OrganisationId, "Title",
+            DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2),
+            "Address", "Description", DateTime.UtcNow,
             EventStatus.Draft, null, null, conversationId, 0);
         var aiJson = JsonSerializer.Serialize(new
         {
-            status = "incomplete",
-            reply = "Need more info"
+            category_id = "2",
+            status = "ready",
+            reply = "Ready!"
         });
 
         _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
         _messageRepositoryMock.Setup(x => x.GetByConversationIdAsync(conversationId)).ReturnsAsync([]);
         _aiChatServiceMock.Setup(x => x.GetStructuredReplyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<AiMessage>>(), It.IsAny<CancellationToken>())).ReturnsAsync(aiJson);
 
-        await _service.SendMessageAsync(input);
+        var result = await _service.SendMessageAsync(input);
 
-        @event.Version.Should().Be(1);
+        result.IsError.Should().BeFalse();
+        @event.Status.Should().Be(EventStatus.ReadyToPublish);
+        @event.EventCategoryId.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenAiReturnsInvalidCategoryId_ShouldReturnAiParseError()
+    {
+        var conversationId = Guid.NewGuid();
+        var input = new SendMessageInput(Guid.NewGuid(), Guid.NewGuid(), "Hello");
+        var @event = Event.Reconstitute(
+            input.EventId, input.OrganisationId, "Title",
+            DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2),
+            "Address", "Description", DateTime.UtcNow,
+            EventStatus.Draft, null, null, conversationId, 0);
+        var aiJson = JsonSerializer.Serialize(new
+        {
+            category_id = "999",
+            status = "ready",
+            reply = "Ready!"
+        });
+
+        _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
+        _messageRepositoryMock.Setup(x => x.GetByConversationIdAsync(conversationId)).ReturnsAsync([]);
+        _aiChatServiceMock.Setup(x => x.GetStructuredReplyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<AiMessage>>(), It.IsAny<CancellationToken>())).ReturnsAsync(aiJson);
+
+        var result = await _service.SendMessageAsync(input);
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Code.Should().Be("Event.AiParseError");
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenAiReturnsIncompleteWithCategory_ShouldUpdateCategoryButKeepDraft()
+    {
+        var conversationId = Guid.NewGuid();
+        var input = new SendMessageInput(Guid.NewGuid(), Guid.NewGuid(), "Hello");
+        var @event = Event.Reconstitute(
+            input.EventId, input.OrganisationId, "Title",
+            DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2),
+            "Address", "", DateTime.UtcNow,
+            EventStatus.Draft, null, null, conversationId, 0);
+        var aiJson = JsonSerializer.Serialize(new
+        {
+            category_id = "1",
+            status = "incomplete",
+            reply = "Got the category!"
+        });
+
+        _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
+        _messageRepositoryMock.Setup(x => x.GetByConversationIdAsync(conversationId)).ReturnsAsync([]);
+        _aiChatServiceMock.Setup(x => x.GetStructuredReplyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<AiMessage>>(), It.IsAny<CancellationToken>())).ReturnsAsync(aiJson);
+
+        var result = await _service.SendMessageAsync(input);
+
+        result.IsError.Should().BeFalse();
+        @event.Status.Should().Be(EventStatus.Draft);
+        @event.EventCategoryId.Should().Be(1);
     }
 }

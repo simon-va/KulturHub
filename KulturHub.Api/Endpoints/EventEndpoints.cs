@@ -6,6 +6,7 @@ using KulturHub.Api.Responses;
 using KulturHub.Application.Features.Events.DeleteEvent;
 using KulturHub.Application.Features.Events.GetConversation;
 using KulturHub.Application.Features.Events.GetEvent;
+using KulturHub.Application.Features.Events.GetEventCategories;
 using KulturHub.Application.Features.Events.GetEvents;
 using KulturHub.Application.Features.Events.InitializeEvent;
 using KulturHub.Application.Features.Events.SendMessage;
@@ -17,6 +18,19 @@ public static class EventEndpoints
 {
     public static void MapEventEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/event-categories", async (
+            IGetEventCategoriesService getEventCategoriesService) =>
+        {
+            var result = await getEventCategoriesService.GetEventCategoriesAsync();
+
+            return result.Match(
+                categories => Results.Ok(categories),
+                errors => errors.ToResult());
+        })
+        .Produces<IEnumerable<EventCategoryResponse>>(StatusCodes.Status200OK)
+        .WithName("Event_GetEventCategories")
+        .WithTags("Event");
+
         app.MapGet("/organisations/{organisationId:guid}/events", async (
             Guid organisationId,
             IGetEventsService getEventsService) =>

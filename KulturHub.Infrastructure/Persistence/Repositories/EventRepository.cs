@@ -16,7 +16,7 @@ public class EventRepository(
         DateTime? StartTime, DateTime? EndTime,
         string? Address, string? Description, DateTime CreatedAt,
         int Status, string? ErrorMessage,
-        Guid? EventCategoryId, Guid? ConversationId, int Version);
+        int? EventCategoryId, Guid? ConversationId, int Version);
 
     public async Task CreateAsync(Event @event)
     {
@@ -79,13 +79,14 @@ public class EventRepository(
     {
         const string sql = """
             UPDATE events
-            SET title       = @Title,
-                address     = @Address,
-                description = @Description,
-                start_time  = @StartTime,
-                end_time    = @EndTime,
-                status      = @Status,
-                event_version = event_version + 1
+            SET title             = @Title,
+                address           = @Address,
+                description       = @Description,
+                start_time        = @StartTime,
+                end_time          = @EndTime,
+                status            = @Status,
+                event_category_id = @EventCategoryId,
+                event_version     = event_version + 1
             WHERE id = @Id AND event_version = @Version
             """;
 
@@ -98,6 +99,7 @@ public class EventRepository(
             @event.StartTime,
             @event.EndTime,
             Status = (int)@event.Status,
+            @event.EventCategoryId,
             @event.Version,
         }, connectionProvider.Transaction);
 

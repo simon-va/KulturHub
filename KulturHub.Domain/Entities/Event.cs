@@ -15,14 +15,17 @@ public class Event
     public DateTime CreatedAt { get; private set; }
     public EventStatus Status { get; private set; }
     public string? ErrorMessage { get; private set; }
-    public Guid? EventCategoryId { get; private set; }
+    public int? EventCategoryId { get; private set; }
     public Guid? ConversationId { get; private set; }
     public int Version { get; private set; }
 
     public void UpdateDetails(string? title = null, string? address = null, string? description = null,
                               DateTime? startTime = null, DateTime? endTime = null,
-                              EventStatus? newStatus = null)
+                              EventStatus? newStatus = null, int? eventCategoryId = null)
     {
+        if (Status == EventStatus.Published)
+            throw new DomainException("Cannot modify a published event.");
+
         if (title is not null)
             Title = title;
 
@@ -49,6 +52,9 @@ public class Event
 
         if (newStatus.HasValue)
             Status = newStatus.Value;
+
+        if (eventCategoryId.HasValue)
+            EventCategoryId = eventCategoryId.Value;
     }
 
     public void Publish()
@@ -93,7 +99,7 @@ public class Event
         DateTime? startTime, DateTime? endTime,
         string? address, string? description, DateTime createdAt,
         EventStatus status, string? errorMessage,
-        Guid? eventCategoryId, Guid? conversationId, int version) => new()
+        int? eventCategoryId, Guid? conversationId, int version) => new()
     {
         Id = id,
         OrganisationId = organisationId,
