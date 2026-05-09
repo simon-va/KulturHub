@@ -7,11 +7,11 @@ public class Event
 {
     public Guid Id { get; private set; }
     public Guid OrganisationId { get; private set; }
-    public string Title { get; private set; } = string.Empty;
+    public string? Title { get; private set; }
     public DateTime? StartTime { get; private set; }
     public DateTime? EndTime { get; private set; }
-    public string Address { get; private set; } = string.Empty;
-    public string Description { get; private set; } = string.Empty;
+    public string? Address { get; private set; }
+    public string? Description { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public EventStatus Status { get; private set; }
     public string? ErrorMessage { get; private set; }
@@ -23,29 +23,14 @@ public class Event
                               DateTime? startTime = null, DateTime? endTime = null,
                               EventStatus? newStatus = null)
     {
-        if (Status == EventStatus.Published)
-            throw new DomainException("Cannot modify a published event.");
-
         if (title is not null)
-        {
-            if (string.IsNullOrWhiteSpace(title))
-                throw new DomainException("Title is required.");
             Title = title;
-        }
 
         if (address is not null)
-        {
-            if (string.IsNullOrWhiteSpace(address))
-                throw new DomainException("Address is required.");
             Address = address;
-        }
 
         if (description is not null)
-        {
-            if (string.IsNullOrWhiteSpace(description))
-                throw new DomainException("Description is required.");
             Description = description;
-        }
 
         if (startTime.HasValue)
         {
@@ -104,9 +89,9 @@ public class Event
     };
 
     public static Event Reconstitute(
-        Guid id, Guid organisationId, string title,
+        Guid id, Guid organisationId, string? title,
         DateTime? startTime, DateTime? endTime,
-        string address, string description, DateTime createdAt,
+        string? address, string? description, DateTime createdAt,
         EventStatus status, string? errorMessage,
         Guid? eventCategoryId, Guid? conversationId, int version) => new()
     {

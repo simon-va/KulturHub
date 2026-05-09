@@ -24,8 +24,10 @@ public class SendMessageServiceTests
     // - When AI returns empty reply: returns AiParseError
     // - When concurrency conflict occurs: returns ConcurrencyConflict error
     // - Bot message is saved with Assistant role
-    // - AI receives event context in system prompt
+    // - AI receives event context in system prompt (times shown in Europe/Berlin)
     // - Status transition is based solely on AI's ready/incomplete flag
+    // - Bare ISO datetimes (no offset) are interpreted as Europe/Berlin local time and converted to UTC
+    // - Datetimes with explicit UTC offset (Z or +xx:xx) are parsed directly as UTC
 
     private readonly Mock<IEventRepository> _eventRepositoryMock = new();
     private readonly Mock<IMessageRepository> _messageRepositoryMock = new();
@@ -194,6 +196,96 @@ public class SendMessageServiceTests
 
         result.IsError.Should().BeTrue();
         result.FirstError.Code.Should().Be("Event.AiParseError");
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenAiReturnsIsoDateWithoutFractionalSeconds_ShouldParseAsBerlinSummerTime()
+    {
+        var conversationId = Guid.NewGuid();
+        var input = new SendMessageInput(Guid.NewGuid(), Guid.NewGuid(), "Hello");
+        var @event = Event.Reconstitute(
+            input.EventId, input.OrganisationId, "Title",
+            null, null, "Address", "", DateTime.UtcNow,
+            EventStatus.Draft, null, null, conversationId, 0);
+        var aiJson = JsonSerializer.Serialize(new
+        {
+            description = "Description",
+            start_time = "2026-07-20T13:00:00",
+            end_time = "2026-07-20T15:00:00",
+            status = "ready",
+            reply = "All set!"
+        });
+
+        _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
+        _messageRepositoryMock.Setup(x => x.GetByConversationIdAsync(conversationId)).ReturnsAsync([]);
+        _aiChatServiceMock.Setup(x => x.GetStructuredReplyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<AiMessage>>(), It.IsAny<CancellationToken>())).ReturnsAsync(aiJson);
+
+        var result = await _service.SendMessageAsync(input);
+
+        result.IsError.Should().BeFalse();
+        @event.Status.Should().Be(EventStatus.ReadyToPublish);
+        @event.StartTime.Should().Be(new DateTime(2026, 7, 20, 11, 0, 0, DateTimeKind.Utc));
+        @event.EndTime.Should().Be(new DateTime(2026, 7, 20, 13, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenAiReturnsIsoDateInWinter_ShouldParseAsBerlinWinterTime()
+    {
+        var conversationId = Guid.NewGuid();
+        var input = new SendMessageInput(Guid.NewGuid(), Guid.NewGuid(), "Hello");
+        var @event = Event.Reconstitute(
+            input.EventId, input.OrganisationId, "Title",
+            null, null, "Address", "", DateTime.UtcNow,
+            EventStatus.Draft, null, null, conversationId, 0);
+        var aiJson = JsonSerializer.Serialize(new
+        {
+            description = "Description",
+            start_time = "2027-01-15T13:00:00",
+            end_time = "2027-01-15T15:00:00",
+            status = "ready",
+            reply = "All set!"
+        });
+
+        _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
+        _messageRepositoryMock.Setup(x => x.GetByConversationIdAsync(conversationId)).ReturnsAsync([]);
+        _aiChatServiceMock.Setup(x => x.GetStructuredReplyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<AiMessage>>(), It.IsAny<CancellationToken>())).ReturnsAsync(aiJson);
+
+        var result = await _service.SendMessageAsync(input);
+
+        result.IsError.Should().BeFalse();
+        @event.Status.Should().Be(EventStatus.ReadyToPublish);
+        @event.StartTime.Should().Be(new DateTime(2027, 1, 15, 12, 0, 0, DateTimeKind.Utc));
+        @event.EndTime.Should().Be(new DateTime(2027, 1, 15, 14, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenAiReturnsIsoDateWithExplicitUtcOffset_ShouldParseAsUtc()
+    {
+        var conversationId = Guid.NewGuid();
+        var input = new SendMessageInput(Guid.NewGuid(), Guid.NewGuid(), "Hello");
+        var @event = Event.Reconstitute(
+            input.EventId, input.OrganisationId, "Title",
+            null, null, "Address", "", DateTime.UtcNow,
+            EventStatus.Draft, null, null, conversationId, 0);
+        var aiJson = JsonSerializer.Serialize(new
+        {
+            description = "Description",
+            start_time = "2026-07-20T11:00:00Z",
+            end_time = "2026-07-20T13:00:00Z",
+            status = "ready",
+            reply = "All set!"
+        });
+
+        _eventRepositoryMock.Setup(x => x.GetByIdAsync(input.EventId, input.OrganisationId)).ReturnsAsync(@event);
+        _messageRepositoryMock.Setup(x => x.GetByConversationIdAsync(conversationId)).ReturnsAsync([]);
+        _aiChatServiceMock.Setup(x => x.GetStructuredReplyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<AiMessage>>(), It.IsAny<CancellationToken>())).ReturnsAsync(aiJson);
+
+        var result = await _service.SendMessageAsync(input);
+
+        result.IsError.Should().BeFalse();
+        @event.Status.Should().Be(EventStatus.ReadyToPublish);
+        @event.StartTime.Should().Be(new DateTime(2026, 7, 20, 11, 0, 0, DateTimeKind.Utc));
+        @event.EndTime.Should().Be(new DateTime(2026, 7, 20, 13, 0, 0, DateTimeKind.Utc));
     }
 
     [Fact]

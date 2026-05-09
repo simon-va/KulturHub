@@ -15,12 +15,15 @@ public class SendMessageService(
     IMessageRepository messageRepository,
     IAiChatService aiChatService) : ISendMessageService
 {
+    private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+
     private const string BaseSystemPrompt = """
         Du bist ein freundlicher Assistent, der Vereinsvertretern hilft, ihre Veranstaltung für den Kulturkalender zu erfassen.
         Frage nach diesen fünf Feldern: Titel der Veranstaltung, Adresse/Ort, Beschreibung, Beginn (Datum + Uhrzeit) und Ende (Datum + Uhrzeit).
         Frage immer nur nach einer fehlenden Information auf einmal. Antworte ausschließlich auf Deutsch.
         Setze "status" auf "ready", wenn alle fünf Felder vollständig und plausibel sind (Ende muss nach Beginn liegen).
         Gib Beginn und Ende im ISO-8601-Format zurück, z.B. "2025-07-12T18:00:00".
+        Alle Uhrzeiten sind in der deutschen Zeitzone (Europe/Berlin).
         Felder, die noch nicht bekannt sind, lasse im JSON weg.
         Wenn alle benötigten Felder mit Daten gefüllt sind, kannst du dem Nutzer Bescheid geben, dass er die Veranstaltung veröffentlichen kann.
         Du musst in JEDER Antwort einen Wert für "reply" zurückgeben. Das ist deine direkte, freundliche Antwort an den Nutzer.
@@ -52,8 +55,8 @@ public class SendMessageService(
         context.AppendLine($"- Titel: {(!string.IsNullOrWhiteSpace(@event.Title) ? @event.Title : "(noch leer)")}");
         context.AppendLine($"- Adresse: {(!string.IsNullOrWhiteSpace(@event.Address) ? @event.Address : "(noch leer)")}");
         context.AppendLine($"- Beschreibung: {(!string.IsNullOrWhiteSpace(@event.Description) ? @event.Description : "(noch leer)")}");
-        context.AppendLine($"- Beginn: {(@event.StartTime.HasValue ? @event.StartTime.Value.ToString("O", System.Globalization.CultureInfo.InvariantCulture) : "(noch leer)")}");
-        context.AppendLine($"- Ende: {(@event.EndTime.HasValue ? @event.EndTime.Value.ToString("O", System.Globalization.CultureInfo.InvariantCulture) : "(noch leer)")}");
+        context.AppendLine($"- Beginn: {(@event.StartTime.HasValue ? ToBerlinIsoString(@event.StartTime.Value) : "(noch leer)")}");
+        context.AppendLine($"- Ende: {(@event.EndTime.HasValue ? ToBerlinIsoString(@event.EndTime.Value) : "(noch leer)")}");
         context.AppendLine();
         context.AppendLine("Gib in deiner Antwort immer alle bereits bekannten Felder zurück, zusammen mit neuen oder geänderten Informationen.");
         return context.ToString();
@@ -93,16 +96,16 @@ public class SendMessageService(
 
         if (aiResponse.StartTime is not null)
         {
-            if (!DateTime.TryParseExact(aiResponse.StartTime, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var start))
+            if (!TryParseAiDateTime(aiResponse.StartTime, out var start))
                 return EventErrors.AiParseError();
-            parsedStart = start.ToUniversalTime();
+            parsedStart = start;
         }
 
         if (aiResponse.EndTime is not null)
         {
-            if (!DateTime.TryParseExact(aiResponse.EndTime, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var end))
+            if (!TryParseAiDateTime(aiResponse.EndTime, out var end))
                 return EventErrors.AiParseError();
-            parsedEnd = end.ToUniversalTime();
+            parsedEnd = end;
         }
 
         if (string.IsNullOrWhiteSpace(aiResponse.Reply))
@@ -136,5 +139,46 @@ public class SendMessageService(
         return new SendMessageResponse(
             new MessageResponse(userMessage.Id, userMessage.Role, userMessage.Content, userMessage.CreatedAt),
             new MessageResponse(botMessage.Id, botMessage.Role, botMessage.Content, botMessage.CreatedAt));
+    }
+
+    private static bool TryParseAiDateTime(string? value, out DateTime result)
+    {
+        if (value is null)
+        {
+            result = default;
+            return false;
+        }
+
+        if (DateTime.TryParseExact(value, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var roundtrip))
+        {
+            result = roundtrip.Kind switch
+            {
+                DateTimeKind.Utc => roundtrip,
+                DateTimeKind.Local => roundtrip.ToUniversalTime(),
+                _ => TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(roundtrip, DateTimeKind.Unspecified), Berlin),
+            };
+            return true;
+        }
+
+        string[] fallbackFormats = ["yyyy-MM-ddTHH:mm:ssK"];
+        if (DateTime.TryParseExact(value, fallbackFormats, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var fallback))
+        {
+            result = fallback.Kind switch
+            {
+                DateTimeKind.Utc => fallback,
+                DateTimeKind.Local => fallback.ToUniversalTime(),
+                _ => TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(fallback, DateTimeKind.Unspecified), Berlin),
+            };
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+
+    private static string ToBerlinIsoString(DateTime utc)
+    {
+        DateTime local = TimeZoneInfo.ConvertTimeFromUtc(utc, Berlin);
+        return local.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
     }
 }

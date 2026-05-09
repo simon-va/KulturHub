@@ -12,9 +12,9 @@ public class EventRepository(
     IDbConnectionFactory connectionFactory) : IEventRepository
 {
     private sealed record EventRow(
-        Guid Id, Guid OrganisationId, string Title,
+        Guid Id, Guid OrganisationId, string? Title,
         DateTime? StartTime, DateTime? EndTime,
-        string Address, string Description, DateTime CreatedAt,
+        string? Address, string? Description, DateTime CreatedAt,
         int Status, string? ErrorMessage,
         Guid? EventCategoryId, Guid? ConversationId, int Version);
 

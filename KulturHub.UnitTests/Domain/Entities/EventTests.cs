@@ -11,9 +11,6 @@ public class EventTests
     // - CreateDraft initializes status to Draft and version to 0
     // - UpdateDetails sets all provided fields and status
     // - UpdateDetails with null parameters keeps existing values
-    // - UpdateDetails throws when title is empty
-    // - UpdateDetails throws when address is empty
-    // - UpdateDetails throws when description is empty
     // - UpdateDetails throws when startTime is in the past
     // - UpdateDetails throws when endTime is before startTime
     // - UpdateDetails throws when event is Published
@@ -72,38 +69,6 @@ public class EventTests
         @event.Status.Should().Be(EventStatus.Draft);
     }
 
-    [Fact]
-    public void UpdateDetails_WhenTitleIsEmpty_ShouldThrowDomainException()
-    {
-        var @event = Event.CreateDraft(Guid.NewGuid(), Guid.NewGuid());
-
-        Action act = () => @event.UpdateDetails(title: "", address: "Address", description: "Description",
-            startTime: DateTime.UtcNow.AddDays(1), endTime: DateTime.UtcNow.AddDays(2));
-
-        act.Should().Throw<DomainException>().WithMessage("Title is required.");
-    }
-
-    [Fact]
-    public void UpdateDetails_WhenAddressIsEmpty_ShouldThrowDomainException()
-    {
-        var @event = Event.CreateDraft(Guid.NewGuid(), Guid.NewGuid());
-
-        Action act = () => @event.UpdateDetails(title: "Title", address: "", description: "Description",
-            startTime: DateTime.UtcNow.AddDays(1), endTime: DateTime.UtcNow.AddDays(2));
-
-        act.Should().Throw<DomainException>().WithMessage("Address is required.");
-    }
-
-    [Fact]
-    public void UpdateDetails_WhenDescriptionIsEmpty_ShouldThrowDomainException()
-    {
-        var @event = Event.CreateDraft(Guid.NewGuid(), Guid.NewGuid());
-
-        Action act = () => @event.UpdateDetails(title: "Title", address: "Address", description: "",
-            startTime: DateTime.UtcNow.AddDays(1), endTime: DateTime.UtcNow.AddDays(2));
-
-        act.Should().Throw<DomainException>().WithMessage("Description is required.");
-    }
 
     [Fact]
     public void UpdateDetails_WhenStartTimeIsInPast_ShouldThrowDomainException()
