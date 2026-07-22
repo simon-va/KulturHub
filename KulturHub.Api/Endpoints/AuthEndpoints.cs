@@ -15,10 +15,10 @@ public static class AuthEndpoints
                 new SignUpInput(req.FirstName, req.LastName, req.Email, req.Password, req.InvitationCode));
 
             return result.Match(
-                response => Results.Ok(response),
+                Results.Ok,
                 errors => errors.ToResult());
         })
-        .Produces<AuthResponse>(StatusCodes.Status200OK)
+        .Produces<AuthResponse>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict)
         .WithName("Auth_SignUp")

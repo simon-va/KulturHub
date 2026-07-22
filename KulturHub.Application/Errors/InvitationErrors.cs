@@ -13,3 +13,9 @@ public static class InvitationErrors
     public static readonly Error AlreadyUsed =
         Error.Conflict("Invitation.AlreadyUsed", "Invitation code has already been used.");
 }
+
+public sealed class InvitationAlreadyUsedException(Guid invitationId)
+    : Exception($"Invitation {invitationId} was already used by a concurrent request.")
+{
+    public Guid InvitationId { get; } = invitationId;
+}

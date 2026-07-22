@@ -1,5 +1,8 @@
 # KulturHub Project
 
+> **Hinweis**: Dieses Dokument beschreibt die angestrebte Test-Strategie für die gesamte Solution.
+> Aktuell ist `KulturHub.UnitTests` als Projekt angelegt (xUnit, Moq, FluentAssertions, coverlet), enthält aber noch **keine konkreten Tests**. Sobald weitere Use Cases (z. B. `AuthService.SignUpAsync`) implementiert sind, werden die hier dokumentierten Konventionen und Pflicht-Testfälle angewendet.
+
 ## Stack
 
 - **API**: ASP.NET (C#) in JetBrains Rider

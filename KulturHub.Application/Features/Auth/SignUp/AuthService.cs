@@ -3,7 +3,6 @@ using FluentValidation;
 using KulturHub.Application.Errors;
 using KulturHub.Application.Ports;
 using KulturHub.Domain.Entities;
-using KulturHub.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace KulturHub.Application.Features.Auth.SignUp;
@@ -11,7 +10,6 @@ namespace KulturHub.Application.Features.Auth.SignUp;
 public class AuthService(
     IAuthProvider authProvider,
     IAuthRepository authRepository,
-    IInvitationRepository invitationRepository,
     ISupabaseAdminClient supabaseAdminClient,
     IValidator<SignUpInput> validator,
     ILogger<AuthService> logger) : IAuthService
@@ -24,7 +22,7 @@ public class AuthService(
                 .Select(e => Error.Validation(e.PropertyName, e.ErrorMessage))
                 .ToList();
 
-        var invitation = await invitationRepository.GetByCodeAsync(input.InvitationCode);
+        var invitation = await authRepository.GetInvitationByCodeAsync(input.InvitationCode);
         if (invitation is null)
             return InvitationErrors.NotFound;
         if (invitation.IsExpired)
@@ -42,6 +40,13 @@ public class AuthService(
         try
         {
             await authRepository.InsertUserAsync(user, invitation.Id);
+        }
+        catch (InvitationAlreadyUsedException)
+        {
+            logger.LogWarning("Invitation {InvitationId} was claimed concurrently. Rolling back auth user {UserId}.",
+                invitation.Id, session.UserId);
+            await supabaseAdminClient.DeleteUserAsync(session.UserId);
+            return InvitationErrors.AlreadyUsed;
         }
         catch (Exception ex)
         {

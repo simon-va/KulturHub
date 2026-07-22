@@ -1,5 +1,7 @@
 # KulturHub Copilot Instructions
 
+> **Implementierungsstand**: Aktuell realisiert sind nur `KulturHub.Api` und `KulturHub.UnitTests` (leer) mit dem `Auth`-Use-Case (SignUp mit Invitation-Code, JWT, Supabase, Dapper, PostgreSQL). Die übrigen Abschnitte unten beschreiben die **Zielarchitektur**. Mit `[PLANNED]` markierte Stellen existieren noch nicht im Code.
+
 ## Build, Test, and Run Commands
 
 ```bash
@@ -9,52 +11,42 @@ dotnet build KulturHub.sln
 # Run the API (http://localhost:5159)
 dotnet run --project KulturHub.Api
 
-# Run the background worker
-dotnet run --project KulturHub.Worker
-
 # Run all unit tests
 dotnet test KulturHub.UnitTests
-
-# Run a single test class
-dotnet test KulturHub.UnitTests --filter "FullyQualifiedName~WeeklyPostServiceTests"
-
-# Run a single test method
-dotnet test KulturHub.UnitTests --filter "FullyQualifiedName~Handle_WhenNoEventsFound_ShouldReturnEmptyGuid"
 ```
+
+`KulturHub.Worker` ist geplant — siehe Abschnitt *Worker Jobs*.
 
 ## Architecture Overview
 
-Clean Architecture with 6 projects:
+Clean Architecture. Aktuell vorhanden: 5 Projekte (das Worker-Projekt ist geplant).
 
-| Project | Responsibility | Dependencies |
-|---------|---------------|--------------|
-| `KulturHub.Domain` | Entities, enums, repository interfaces, domain exceptions | None |
-| `KulturHub.Application` | Use cases / services, FluentValidation validators, application errors, ports (abstractions for infrastructure) | Domain, ErrorOr, FluentValidation |
-| `KulturHub.Infrastructure` | Repository implementations, external API clients, image generation, file storage, persistence | Application + Domain |
-| `KulturHub.Api` | Minimal API endpoints, auth, CORS, OpenAPI document | Application + Infrastructure |
-| `KulturHub.Worker` | Background services (hosted services) for scheduled jobs | Application + Infrastructure |
-| `KulturHub.UnitTests` | Unit tests for application services | Application + Domain |
+| Project | Responsibility | Dependencies | Status |
+|---------|---------------|--------------|--------|
+| `KulturHub.Domain` | Entities, enums, repository interfaces | None | implementiert |
+| `KulturHub.Application` | Use cases / services, FluentValidation validators, application errors, ports (abstractions for infrastructure) | Domain, ErrorOr, FluentValidation | implementiert |
+| `KulturHub.Infrastructure` | Repository implementations, external API clients, image generation, file storage, persistence | Application + Domain | implementiert |
+| `KulturHub.Api` | Minimal API endpoints, auth, CORS, OpenAPI document | Application + Infrastructure | implementiert |
+| `KulturHub.Worker` `[PLANNED]` | Background services (hosted services) for scheduled jobs | Application + Infrastructure | **nicht vorhanden** |
+| `KulturHub.UnitTests` | Unit tests for application services | Application + Domain | Projekt vorhanden, **Tests fehlen** |
 
-**Two entry points:**
-- `KulturHub.Api` — ASP.NET Core API with JWT authentication backed by Supabase.
-- `KulturHub.Worker` — Background service host running `WeeklyPostJob` and `TokenRefreshJob`.
+**Entry points:**
+- `KulturHub.Api` — ASP.NET Core API with JWT authentication backed by Supabase. *(implementiert)*
+- `KulturHub.Worker` `[PLANNED]` — Background service host running `WeeklyPostJob` and `TokenRefreshJob`.
 
 **Key external integrations:**
-- **PostgreSQL** via Dapper (raw SQL; no EF Core).
-- **Supabase** for JWT authentication and file storage.
-- **OpenAI** for AI chat services.
-- **Chayns API** for aggregating cultural events.
-- **Instagram Graph API** for publishing carousel posts.
-- **SkiaSharp** for server-side image generation.
+- **PostgreSQL** via Dapper (raw SQL; no EF Core). *(implementiert)*
+- **Supabase** for JWT authentication and file storage. *(Auth implementiert, Storage geplant)*
+- **Chayns API** `[PLANNED]` — for aggregating cultural events.
+- **Instagram Graph API** `[PLANNED]` — for publishing carousel posts.
 
-**Database migrations** are manual SQL files in `KulturHub.Infrastructure/migrations/` and must be run sequentially in filename order.
+**Database migrations** `[PLANNED]` — manual SQL files in `KulturHub.Infrastructure/migrations/` (Ordner existiert noch nicht) and must be run sequentially in filename order.
 
 ## Key Conventions
 
 ### Error Handling
 - Application services return `ErrorOr<T>` from the ErrorOr library. Never throw exceptions for business errors.
-- Domain entities throw `DomainException` for invariant violations.
-- Application errors are defined in static classes under `KulturHub.Application.Errors` (e.g., `EventErrors.NotFound(id)`).
+- Application errors are defined in static classes under `KulturHub.Application.Errors` (e.g., `AuthErrors.AlreadyRegistered`, `EventErrors.NotFound(id)`).
 - The API layer maps `ErrorOr` errors to HTTP results via `ErrorExtensions.ToResult()`.
 
 ### Domain Entities
@@ -67,24 +59,18 @@ Clean Architecture with 6 projects:
 - Repositories implement interfaces defined in `KulturHub.Domain.Interfaces`.
 - Located in `KulturHub.Infrastructure.Persistence.Repositories`.
 - Use Dapper with raw SQL (no EF Core).
-- **Reads** use `IDbConnectionFactory` directly and create/own the connection.
-- **Writes** use `IConnectionProvider` to participate in the scoped `UnitOfWork` transaction.
+- All methods (reads and writes) use `IDbConnectionFactory` directly, create/own the connection, and manage their own transactions via `BeginTransactionAsync()` / `CommitAsync()` when multiple statements must run atomically.
 - Enums are cast to/from `int` in SQL parameters and result mapping.
-
-### Unit of Work
-- `UnitOfWorkEndpointFilter` wraps mutating endpoints in a database transaction.
-- Mark write endpoints with `.WithUnitOfWork()` in endpoint definitions.
-- `IUnitOfWork` and `IConnectionProvider` are scoped and backed by `UnitOfWork`.
 
 ### API Endpoints
 - Minimal APIs grouped in static classes under `KulturHub.Api.Endpoints`.
 - Each feature group exposes a `MapXxxEndpoints(this IEndpointRouteBuilder)` extension method called from `Program.cs`.
-- Use `.RequireAuthorization()` and `.RequireOrganisationMembership()` for protected routes.
+- `.RequireAuthorization()` for protected routes. `.RequireOrganisationMembership()` `[PLANNED]`.
 - Input DTOs live in `KulturHub.Api.Requests`; output DTOs in `KulturHub.Api.Responses`.
 
 ### Application Services
 - Located in `KulturHub.Application.Features.{Domain}.{ActionName}`.
-- Each service has an interface (e.g., `IGetEventsService`) and implementation (e.g., `GetEventsService`).
+- Each service has an interface (e.g., `IAuthService`, `IGetEventsService`) and implementation (e.g., `AuthService`, `GetEventsService`).
 - Services return `ErrorOr<T>` and are registered as scoped in `DependencyInjection.cs`.
 - FluentValidation validators are registered via `AddValidatorsFromAssembly` in `KulturHub.Application`.
 
@@ -96,14 +82,15 @@ Clean Architecture with 6 projects:
 - **Structure:** list all domain rules as a comment block at the top of the test class, then implement tests.
 - **Required test cases per handler:** happy path, each validation rule as a failure case, edge cases (null, empty, boundary values).
 
-### Worker Jobs
+### Worker Jobs `[PLANNED]`
 - Jobs are `BackgroundService` implementations in `KulturHub.Worker.Jobs`.
 - `Worker:RunImmediately: true` in configuration runs jobs immediately on startup for local testing.
 - Jobs resolve application services from a DI scope (`IServiceScopeFactory`).
 
 ### Configuration
 - Secrets managed via `dotnet user-secrets` or `appsettings.json`.
-- Required config keys: `ConnectionStrings:Default`, `Chayns:*`, `Supabase:*`, `OpenAI:ApiKey`, `Cors:AllowedOrigins`.
+- Required config keys (aktuell): `ConnectionStrings:Default`, `Supabase:Url`, `Supabase:Key`, `Supabase:DiscoveryUrl`, `Cors:AllowedOrigins`.
+- Required config keys `[PLANNED]`: `Chayns:*`, weitere Supabase-Storage-Keys.
 - HTTP client private environment files are in `KulturHub.Api/http/http-client.private.env.json` (gitignored).
 
 ### Code Style

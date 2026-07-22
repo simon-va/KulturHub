@@ -1,4 +1,5 @@
 using ErrorOr;
+using KulturHub.Application.Errors;
 using KulturHub.Application.Ports;
 
 namespace KulturHub.Infrastructure.Auth;
@@ -14,11 +15,11 @@ public class SupabaseAuthProvider(Supabase.Client supabaseClient) : IAuthProvide
         }
         catch (Exception ex) when (ex.Message.Contains("already registered", StringComparison.OrdinalIgnoreCase))
         {
-            return Error.Conflict("Auth.AlreadyRegistered", "Email address is already registered.");
+            return AuthErrors.AlreadyRegistered;
         }
 
         if (session?.User?.Id is null || session.AccessToken is null || session.RefreshToken is null)
-            return Error.Failure("Auth.SignUpFailed", "Sign up failed. Please try again.");
+            return AuthErrors.SignUpFailed;
 
         return new AuthProviderSession(session.AccessToken, session.RefreshToken, Guid.Parse(session.User.Id));
     }
