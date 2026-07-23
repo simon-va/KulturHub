@@ -33,7 +33,9 @@ public static class ErrorExtensions
                 extensions: new Dictionary<string, object?> { ["code"] = firstError.Code }),
 
             ErrorType.Unauthorized => Results.Problem(
-                statusCode: StatusCodes.Status401Unauthorized),
+                title: firstError.Description,
+                statusCode: StatusCodes.Status401Unauthorized,
+                extensions: new Dictionary<string, object?> { ["code"] = firstError.Code }),
 
             ErrorType.Forbidden => Results.Problem(
                 title: firstError.Description,

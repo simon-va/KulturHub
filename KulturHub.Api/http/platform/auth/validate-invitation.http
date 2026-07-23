@@ -1,0 +1,27 @@
+### Validate Invitation – gültiger Code
+POST {{baseUrl}}/auth/validate-invitation
+Content-Type: application/json
+
+{
+  "invitationCode": "79V-PNP"
+}
+
+###
+
+### Validate Invitation – ungültiger Code (NotFound / Expired / AlreadyUsed)
+POST {{baseUrl}}/auth/validate-invitation
+Content-Type: application/json
+
+{
+  "invitationCode": "DNV-LDD"
+}
+
+###
+
+### Validate Invitation – leerer Code (ValidationError)
+POST {{baseUrl}}/auth/validate-invitation
+Content-Type: application/json
+
+{
+  "invitationCode": ""
+}

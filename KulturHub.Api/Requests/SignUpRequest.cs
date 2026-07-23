@@ -1,6 +1,6 @@
 namespace KulturHub.Api.Requests;
 
-public record SignUpRequest(
+public sealed record SignUpRequest(
     string FirstName,
     string LastName,
     string Email,

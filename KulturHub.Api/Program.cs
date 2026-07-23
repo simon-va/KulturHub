@@ -1,7 +1,14 @@
+using Dapper;
 using KulturHub.Api.Endpoints;
+using KulturHub.Api.Endpoints.Admin;
+using KulturHub.Api.Endpoints.Platform;
+using KulturHub.Api.Endpoints.Public;
 using KulturHub.Api.Extensions;
 using KulturHub.Application;
 using KulturHub.Infrastructure;
+using Scalar.AspNetCore;
+
+DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +25,16 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
-    app.MapOpenApi();
+{
+    app.MapOpenApi("/openapi/{documentName}.json");
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .AddDocument("public",   "KulturHub Public API",   "/openapi/public.json")
+            .AddDocument("platform", "KulturHub Platform API", "/openapi/platform.json")
+            .AddDocument("admin",    "KulturHub Admin API",    "/openapi/admin.json");
+    });
+}
 
 app.UseKulturHubExceptionHandler();
 app.UseHttpsRedirection();
@@ -26,6 +42,11 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthEndpoints();
 app.MapAuthEndpoints();
+app.MapInvitationEndpoints();
+app.MapOrganisationEndpoints();
+app.MapMembershipEndpoints();
+app.MapChangeLogEndpoints();
 
 app.Run();

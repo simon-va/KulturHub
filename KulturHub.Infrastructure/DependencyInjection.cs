@@ -14,31 +14,36 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<SupabaseOptions>(configuration.GetSection(SupabaseOptions.SectionName));
-        services.AddSingleton<IConfigureOptions<SupabaseOptions>, ConfigureSupabaseOptions>();
+        services.Configure<SupabaseAuthOptions>(configuration.GetSection(SupabaseAuthOptions.SectionName));
+        services.AddSingleton<IConfigureOptions<SupabaseAuthOptions>, ConfigureSupabaseAuthOptions>();
 
         services.AddSingleton<IDbConnectionFactory>(_ =>
             new DbConnectionFactory(configuration));
 
-        services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
+        services.AddScoped<IOrganisationRepository, OrganisationRepository>();
+        services.AddScoped<IMembershipRepository, MembershipRepository>();
+        services.AddScoped<IChangeLogRepository, ChangeLogRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddSingleton(sp =>
         {
-            var options = sp.GetRequiredService<IOptions<SupabaseOptions>>().Value;
+            var options = sp.GetRequiredService<IOptions<SupabaseAuthOptions>>().Value;
             return new Supabase.Client(options.Url, options.Key);
         });
 
         services.AddScoped<IAuthProvider, SupabaseAuthProvider>();
-        services.AddHttpClient<ISupabaseAdminClient, SupabaseAdminClient>();
+        services.AddHttpClient<IUserAdminClient, SupabaseUserAdminClient>();
 
         return services;
     }
 
-    private sealed class ConfigureSupabaseOptions(IConfiguration configuration) : IConfigureOptions<SupabaseOptions>
+    private sealed class ConfigureSupabaseAuthOptions(IConfiguration configuration) : IConfigureOptions<SupabaseAuthOptions>
     {
-        public void Configure(SupabaseOptions options)
+        public void Configure(SupabaseAuthOptions options)
         {
-            var section = configuration.GetSection(SupabaseOptions.SectionName);
+            var section = configuration.GetSection(SupabaseAuthOptions.SectionName);
             options.Url = section["Url"] ?? string.Empty;
             options.Key = section["Key"] ?? string.Empty;
             options.DiscoveryUrl = section["DiscoveryUrl"] ?? string.Empty;

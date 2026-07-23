@@ -1,0 +1,3 @@
+### List my organisations (requires valid JWT in @token)
+GET {{baseUrl}}/organisations/mine
+Authorization: Bearer {{token}}

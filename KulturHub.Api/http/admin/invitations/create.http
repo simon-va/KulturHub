@@ -1,0 +1,6 @@
+### Create Invitation (requires valid JWT in @token)
+POST {{baseUrl}}/invitations
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{}

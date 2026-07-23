@@ -1,4 +1,5 @@
 using FluentValidation;
+using KulturHub.Application.Rules;
 
 namespace KulturHub.Application.Features.Auth.SignUp;
 
@@ -23,6 +24,8 @@ public sealed class SignUpInputValidator : AbstractValidator<SignUpInput>
             .MinimumLength(8).WithMessage("Password must be at least 8 characters.");
 
         RuleFor(x => x.InvitationCode)
-            .NotEmpty().WithMessage("InvitationCode is required.");
+            .NotEmpty().WithMessage("InvitationCode is required.")
+            .Matches(InvitationCodeRules.CodePattern)
+            .WithMessage("InvitationCode must be in the format XXX-XXX using letters and digits excluding 0, O, 1, and I.");
     }
 }

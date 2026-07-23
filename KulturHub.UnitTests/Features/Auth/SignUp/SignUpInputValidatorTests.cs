@@ -11,12 +11,12 @@ public class SignUpInputValidatorTests
     // - LastName: required, max 100 chars
     // - Email: required, must be a valid email address
     // - Password: required, min 8 chars
-    // - InvitationCode: required
+    // - InvitationCode: required, must match XXX-XXX format (excludes 0, O, 1, I)
 
     private readonly SignUpInputValidator _sut = new();
 
     private static SignUpInput ValidInput() =>
-        new("Max", "Mustermann", "max@example.com", "Secret123!", "INVITE01");
+        new("Max", "Mustermann", "max@example.com", "Secret123!", "K3P-R2A");
 
     [Fact]
     public void Validate_WhenAllInputsAreValid_ShouldHaveNoErrors()
@@ -92,8 +92,30 @@ public class SignUpInputValidatorTests
     }
 
     [Theory]
+    [InlineData("ABC-DEF")]
+    [InlineData("234-567")]
+    [InlineData("K3P-R2A")]
+    [InlineData("ZZZ-222")]
+    public void Validate_WhenInvitationCodeMatchesFormat_ShouldNotHaveError(string code)
+    {
+        var input = ValidInput() with { InvitationCode = code };
+        var result = _sut.TestValidate(input);
+        result.ShouldNotHaveValidationErrorFor(x => x.InvitationCode);
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("   ")]
+    [InlineData("K3PR2A")]
+    [InlineData("K3P-R2A ")]
+    [InlineData("K3P-R2")]
+    [InlineData("K3P--R2A")]
+    [InlineData("0KP-R2A")]
+    [InlineData("K3P-R2O")]
+    [InlineData("K3P-R21")]
+    [InlineData("K3P-R2I")]
+    [InlineData("k3p-r2a")]
+    [InlineData("K3P_R2A")]
     public void Validate_WhenInvitationCodeIsBlank_ShouldHaveError(string code)
     {
         var input = ValidInput() with { InvitationCode = code };

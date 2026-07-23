@@ -1,0 +1,8 @@
+### Login – Token holen
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "max.mustermann@gmx.de",
+  "password": "Secret123!"
+}

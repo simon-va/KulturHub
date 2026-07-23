@@ -1,0 +1,6 @@
+@organisationId = 1a13fc95-c652-49fa-8773-cd41941f3bda
+@membershipId = 00000000-0000-0000-0000-000000000000
+
+### Delete a membership of an organisation (requires valid JWT in @token)
+DELETE {{baseUrl}}/organisations/{{organisationId}}/memberships/{{membershipId}}
+Authorization: Bearer {{token}}

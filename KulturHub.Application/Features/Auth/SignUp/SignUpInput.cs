@@ -1,6 +1,6 @@
 namespace KulturHub.Application.Features.Auth.SignUp;
 
-public record SignUpInput(
+public sealed record SignUpInput(
     string FirstName,
     string LastName,
     string Email,

@@ -1,0 +1,8 @@
+### Create Organisation (requires valid JWT in @token)
+POST {{baseUrl}}/organisations
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Acme Inc."
+}

@@ -2,9 +2,9 @@ using ErrorOr;
 
 namespace KulturHub.Application.Ports;
 
-public record AuthProviderSession(string AccessToken, string RefreshToken, Guid UserId);
-
 public interface IAuthProvider
 {
-    Task<ErrorOr<AuthProviderSession>> SignUpAsync(string email, string password);
+    Task<ErrorOr<AuthProviderSession>> SignUpAsync(string email, string password, CancellationToken cancellationToken = default);
+
+    Task<ErrorOr<AuthProviderSession>> SignInAsync(string email, string password, CancellationToken cancellationToken = default);
 }

@@ -12,10 +12,10 @@ public static class InvitationErrors
 
     public static readonly Error AlreadyUsed =
         Error.Conflict("Invitation.AlreadyUsed", "Invitation code has already been used.");
-}
 
-public sealed class InvitationAlreadyUsedException(Guid invitationId)
-    : Exception($"Invitation {invitationId} was already used by a concurrent request.")
-{
-    public Guid InvitationId { get; } = invitationId;
+    public static readonly Error DeleteAlreadyUsed =
+        Error.Conflict("Invitation.DeleteAlreadyUsed", "Cannot delete an invitation that has already been used.");
+
+    public static Error CreateFailed(string details) =>
+        Error.Failure("Invitation.CreateFailed", $"Failed to create invitation: {details}");
 }

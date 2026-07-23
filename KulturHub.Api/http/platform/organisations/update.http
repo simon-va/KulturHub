@@ -1,0 +1,10 @@
+### Update Organisation (requires valid JWT in @token, user must be a member)
+@organisationId = 1a13fc95-c652-49fa-8773-cd41941f3bda
+
+PUT {{baseUrl}}/organisations/{{organisationId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Acme Inc. (updated)"
+}

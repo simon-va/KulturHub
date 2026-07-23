@@ -1,0 +1,2 @@
+### Public health check (no auth required)
+GET {{baseUrl}}/health

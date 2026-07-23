@@ -1,0 +1,3 @@
+### Delete My Account (requires valid JWT in @token)
+DELETE {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
