@@ -1,4 +1,4 @@
-using System.Net.Http.Headers;
+/*using System.Net.Http.Headers;
 using KulturHub.Application.Ports;
 using Microsoft.Extensions.Options;
 
@@ -25,4 +25,4 @@ public class SupabaseUserAdminClient(HttpClient httpClient, IOptions<SupabaseAut
         var response = await httpClient.SendAsync(request, cancellationToken);
         return response.IsSuccessStatusCode;
     }
-}
+}*/

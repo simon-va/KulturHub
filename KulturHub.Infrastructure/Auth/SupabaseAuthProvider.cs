@@ -1,7 +1,6 @@
+/*
 using ErrorOr;
 using KulturHub.Application.Errors;
-using KulturHub.Application.Ports;
-
 namespace KulturHub.Infrastructure.Auth;
 
 public class SupabaseAuthProvider(Supabase.Client supabaseClient) : IAuthProvider
@@ -42,3 +41,4 @@ public class SupabaseAuthProvider(Supabase.Client supabaseClient) : IAuthProvide
         return new AuthProviderSession(session.AccessToken, session.RefreshToken, Guid.Parse(session.User.Id));
     }
 }
+*/
