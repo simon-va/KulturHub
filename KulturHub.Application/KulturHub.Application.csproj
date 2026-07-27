@@ -8,7 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\KulturHub.Infrastructure\KulturHub.Infrastructure.csproj" />
         <ProjectReference Include="..\KulturHub.Domain\KulturHub.Domain.csproj" />
     </ItemGroup>
 
@@ -16,7 +15,8 @@
       <PackageReference Include="ErrorOr" Version="2.0.1" />
       <PackageReference Include="FluentValidation" Version="11.11.0" />
       <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.10" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
     </ItemGroup>
 
     <ItemGroup>

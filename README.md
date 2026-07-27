@@ -71,18 +71,18 @@ zugängliche Sicht auf veröffentlichte Inhalte.
 - `[x]` bereits implementiert
 - `[ ]` noch nicht implementiert
 
-### Kernfunktionen (umgesetzt)
+### Kernfunktionen (geplant)
 
-- [x] **Invitations**: Admins erstellen und verwalten Einladungen zur Plattform.
-- [x] **User**: Nutzer registrieren und melden sich an.
-- [x] **Organisationen**: Anlegen und Verwalten von Organisationen.
-- [x] **Memberships**: Mehrere Nutzer verwalten eine Organisation, ein Nutzer
+- [ ] **Invitations**: Admins erstellen und verwalten Einladungen zur Plattform.
+- [ ] **User**: Nutzer registrieren und melden sich an.
+- [ ] **Organisationen**: Anlegen und Verwalten von Organisationen.
+- [ ] **Memberships**: Mehrere Nutzer verwalten eine Organisation, ein Nutzer
       kann Mitglied mehrerer Organisationen sein.
-- [x] **Change Logs**: Jede Aktion eines Nutzers wird durch einen Change Log
+- [ ] **Change Logs**: Jede Aktion eines Nutzers wird durch einen Change Log
       dokumentiert.
-- [x] **Soft Delete**: Organisationen, Memberships, Einladungen und Nutzer
+- [ ] **Soft Delete**: Organisationen, Memberships, Einladungen und Nutzer
       werden soft-gelöscht; Daten bleiben revisionssicher.
-- [x] **OpenAPI je Bereich**: Separate API-Dokumente für Public, Plattform und
+- [ ] **OpenAPI je Bereich**: Separate API-Dokumente für Public, Plattform und
       Admin.
 
 ### Geplante Bausteine
@@ -102,7 +102,11 @@ zugängliche Sicht auf veröffentlichte Inhalte.
 
 ## 4. Architektur
 
-KulturHub folgt **Clean Architecture** mit klarer Schichtentrennung:
+KulturHub nutzt eine **pragmatische Schichtenarchitektur**. Die Schichten sind
+weiterhin vorhanden, dürfen aber bewusst miteinander verschmelzen, wenn es
+klarer und kürzer ist. Strikte Clean-Architecture-Regeln (keine
+Schicht-übergreifenden Abhängigkeiten, kein direkter Zugriff zwischen
+Anwendung und Persistenz) werden **nicht** erzwungen.
 
 ```
         ┌──────────────────────────────────────┐
@@ -110,11 +114,11 @@ KulturHub folgt **Clean Architecture** mit klarer Schichtentrennung:
         └──────────────────┬───────────────────┘
                            │
         ┌──────────────────▼───────────────────┐
-        │     KulturHub.Infrastructure         │  ← Dapper, PostgreSQL, Supabase
+        │     KulturHub.Infrastructure         │  ← EF Core, Supabase
         └──────────────────┬───────────────────┘
                            │
         ┌──────────────────▼───────────────────┐
-        │      KulturHub.Application           │  ← Use Cases, Validierung, Ports
+        │      KulturHub.Application           │  ← Use Cases, Validierung, DTOs
         └──────────────────┬───────────────────┘
                            │
         ┌──────────────────▼───────────────────┐
@@ -124,31 +128,37 @@ KulturHub folgt **Clean Architecture** mit klarer Schichtentrennung:
 
 ### Schichtenverantwortlichkeiten
 
-- **Domain**: Pure POCO-Entities mit reicher Domänenlogik. Keine Abhängigkeiten
-  auf Frameworks, Datenbanken oder externe Dienste.
-- **Application**: Use Cases (Handler), `ErrorOr`-Result-Pattern, Ports
-  (Repository- und Service-Interfaces), FluentValidation-Validatoren.
-- **Infrastructure**: Implementierung der Ports – Dapper-Repositories,
-  PostgreSQL-Verbindung, Supabase-Auth-Client, HTTP-Admin-Client.
+- **Domain**: Pure POCO-Entities mit Geschäftslogik, Factory-Methoden
+  (`Create` / `Reconstitute`), Invariants. **Keine** Abhängigkeiten auf
+  Frameworks, Datenbanken oder externe Dienste.
+- **Application**: Use-Case-Handler, `ErrorOr`-Result-Pattern,
+  FluentValidation-Validatoren, Request-/Response-DTOs, Ports für externe
+  Systeme. Darf den `AppDbContext` über das `IAppDbContext`-Interface direkt
+  nutzen (DbSets, `IQueryable<T>`, LINQ-to-Entities). Es gibt **keinen**
+  Repository-Zwang – eine direkte EF-Core-Abfrage im Handler ist erlaubt.
+- **Infrastructure**: `AppDbContext`, `IEntityTypeConfiguration<T>`-Klassen,
+  EF-Core-Migrations, Supabase-Auth-Client, Implementierungen der Ports aus
+  dem Application-Layer.
 - **Api**: ASP.NET Core Minimal Hosting, Endpunkt-Definitionen, JWT-Bearer,
-  Drei-OpenAPI-Dokumente, globale Filter für Authentifizierung und
-  Autorisierung.
+  drei OpenAPI-Dokumente, globale Filter für Authentifizierung, Autorisierung
+  und Validation, Mapping von `ErrorOr<T>` auf HTTP-Responses.
 
 ### Wichtige Patterns
 
-- **Result-Pattern mit `ErrorOr`**: Handler liefern `ErrorOr<TResponse>` zurück,
-  Businessfehler werden nicht über Exceptions transportiert.
-- **Dapper statt EF Core**: Schlanker Datenzugriff mit handgeschriebenem SQL;
-  Mapping snake_case → PascalCase über `DefaultTypeMap.MatchNamesWithUnderscores`.
-- **Unit of Work**: Mehrere Repository-Operationen laufen in einer einzigen
-  `Npgsql`-Transaktion.
-- **Soft Delete**: Alle veränderlichen Tabellen besitzen `is_deleted` und
-  `deleted_at`. Lesezugriffe filtern `is_deleted = FALSE`; Eindeutigkeiten
-  werden über partielle Unique-Indexes (`WHERE NOT is_deleted`) realisiert.
-- **OpenAPI je Bereich**: Endpunkte wählen per `.WithGroupName(...)` eines der
-  drei Dokumente (`public`, `platform`, `admin`).
+- **Result-Pattern mit `ErrorOr`**: Handler liefern `ErrorOr<TResponse>`
+  zurück, Businessfehler werden nicht über Exceptions transportiert.
+- **FluentValidation** für Request-Validierung im Application-Layer,
+  ausgeführt im Endpoint-Filter.
+- **EF Core** statt Dapper: `AppDbContext` als zentrales
+  Persistenz-Boundary, Migrations im Infrastructure-Projekt.
+- **Global Query Filter für Soft Delete**: Jede Entity mit `IsDeleted` blendet
+  gelöschte Datensätze automatisch aus Leseabfragen aus. Wer sie bewusst
+  lesen muss, nutzt explizit `IgnoreQueryFilters()`.
+- **OpenAPI je Bereich**: Endpunkte wählen per `.WithGroupName(...)` eines
+  der drei Dokumente (`public`, `platform`, `admin`).
 - **JWT-Bearer-Auth**: Supabase liefert Tokens; das Backend validiert sie
-  über die OIDC-Discovery-URL. Der `sub`-Claim ist der stabile Nutzer-Identifier.
+  über die OIDC-Discovery-URL. Der `sub`-Claim ist der stabile
+  Nutzer-Identifier.
 
 ## 5. Tech-Stack
 
@@ -156,12 +166,13 @@ KulturHub folgt **Clean Architecture** mit klarer Schichtentrennung:
 | --- | --- |
 | Sprache / Framework | C# / .NET 10, ASP.NET Core (Minimal Hosting) |
 | Datenbank | PostgreSQL (Supabase) |
-| ORM | Dapper (kein EF Core) |
+| ORM | EF Core (`Microsoft.EntityFrameworkCore`, `Npgsql.EntityFrameworkCore.PostgreSQL`) |
 | Authentifizierung | Supabase Auth (OIDC) – JWT-Bearer am Backend |
 | API-Dokumentation | `Microsoft.AspNetCore.OpenApi` + Scalar UI |
 | Validierung | FluentValidation |
 | Result-Pattern | ErrorOr |
-| Tests | xUnit, Moq, FluentAssertions, Coverlet |
+| Migrations | EF Core Migrations + `dotnet-ef`-CLI |
+| Tests | xUnit, Moq, FluentAssertions, EF Core InMemory/SQLite-in-Memory |
 | Frontend (separat) | Angular, ausgeliefert von `http://localhost:4200` (Dev) |
 
 Versions-Badges werden ergänzt, sobald eine CI/CD-Pipeline etabliert ist.
@@ -171,11 +182,18 @@ Versions-Badges werden ergänzt, sobald eine CI/CD-Pipeline etabliert ist.
 ```
 KulturHub.sln
 PLAN.md                                  # User-Stories und Akzeptanzkriterien
-migrations/                              # Versionierte SQL-Migrationen
 KulturHub.Domain/                        # Entities, Domain-Regeln
-KulturHub.Application/                   # Features, Ports, Errors, Validators
-KulturHub.Infrastructure/                # Dapper, Supabase, PostgreSQL
+KulturHub.Application/                   # Use Cases, Validatoren, DTOs, Ports
+KulturHub.Infrastructure/                # EF Core, Supabase
+└── Persistence/
+    ├── AppDbContext.cs
+    ├── Configurations/                  # IEntityTypeConfiguration<T>
+    ├── Migrations/                      # EF Core Migrations
+    └── DesignTimeDbContextFactory.cs
 KulturHub.Api/                           # HTTP-Endpunkte, Auth, OpenAPI
+├── Extensions/                          # ServiceCollection-Erweiterungen
+├── Filters/                             # Endpoint-Filter (Validation, ...)
+├── Endpoints/                           # Public / Platform / Admin
 └── http/                                # .http-Beispielrequests
 KulturHub.UnitTests/                     # xUnit, Moq, FluentAssertions
 ```
@@ -185,15 +203,16 @@ KulturHub.UnitTests/                     # xUnit, Moq, FluentAssertions
 | Projekt | Zweck |
 | --- | --- |
 | `KulturHub.Domain` | POCO-Entities und Geschäftsregeln. Keine Abhängigkeiten. |
-| `KulturHub.Application` | Use Cases (Handler), `ErrorOr`-Result-Pattern, Ports, FluentValidation. |
-| `KulturHub.Infrastructure` | Implementierung der Ports (Dapper, PostgreSQL, Supabase). |
+| `KulturHub.Application` | Use-Case-Handler, `ErrorOr`, FluentValidation, Request-/Response-DTOs, Ports für externe Systeme. Darf `IAppDbContext` nutzen. |
+| `KulturHub.Infrastructure` | `AppDbContext`, EF-Core-Migrations, Konfigurationen, Supabase-Integration. |
 | `KulturHub.Api` | ASP.NET-Core-Endpunkte, JWT-Bearer, OpenAPI, Scalar. |
-| `KulturHub.UnitTests` | Isolierte Handler-Tests mit xUnit, Moq und FluentAssertions. |
+| `KulturHub.UnitTests` | Isolierte Tests mit xUnit, Moq, FluentAssertions. |
 
 ### Wichtige Inhalte
 
-- **Migrationen** sind unter `migrations/` mit Namensschema
-  `V<laufende-nummer>__<name>.sql` abgelegt.
+- **Migrationen** liegen unter
+  `KulturHub.Infrastructure/Persistence/Migrations/` und werden über
+  `dotnet ef` verwaltet.
 - **Beispielrequests** für jeden API-Bereich liegen unter
   `KulturHub.Api/http/<bereich>/` und können mit der VS-Code-Erweiterung
   *REST Client* oder JetBrains Rider direkt ausgeführt werden.
@@ -209,21 +228,21 @@ jeder Änderung in einer Schicht die zugehörige Datei lesen.
 
 | Datei | Inhalt |
 | --- | --- |
-| [`KulturHub.Domain/Domain-instructions.md`](KulturHub.Domain/Domain-instructions.md) | Aufbau der Entities, `Create`/`Reconstitute`-Factory-Pattern, Invariants, Soft-Delete-Felder, `DateTime`-Semantik. |
-| [`KulturHub.Application/Application-instructions.md`](KulturHub.Application/Application-instructions.md) | Handler- und Validator-Struktur, `ErrorOr`-Pattern, Ports, Transaktionen, ChangeLog-Pflicht. |
-| [`KulturHub.Infrastructure/Infrastructure-instructions.md`](KulturHub.Infrastructure/Infrastructure-instructions.md) | Dapper/PostgreSQL-Konventionen, Mappings, Soft-Delete-SQL, Supabase-Integration. |
-| [`KulturHub.Api/Api-instructions.md`](KulturHub.Api/Api-instructions.md) | Minimal-API-Endpunkte, Filter, OpenAPI je Bereich, `Program.cs`-Pipeline, JWT-/CORS-/JSON-Setup. |
-| [`KulturHub.UnitTests/UnitTests-instructions.md`](KulturHub.UnitTests/UnitTests-instructions.md) | Test-Stack, Namenskonventionen, Pflicht-Testfälle für jeden Handler. |
+| [`KulturHub.Domain/Domain-instructions.md`](KulturHub.Domain/Domain-instructions.md) | Aufbau der Entities, `Create`/`Reconstitute`-Factory-Pattern, Invariants, Soft-Delete-Felder, `DateTime`-Semantik, strongly typed IDs. |
+| [`KulturHub.Application/Application-instructions.md`](KulturHub.Application/Application-instructions.md) | Handler-Aufbau, `ErrorOr`-Pattern, Validatoren, Transaktionen, Change-Log-Pflicht, erlaubter EF-Core-Zugriff, Ports für externe Systeme. |
+| [`KulturHub.Infrastructure/Infrastructure-instructions.md`](KulturHub.Infrastructure/Infrastructure-instructions.md) | EF-Core-Konventionen, `AppDbContext`, `IEntityTypeConfiguration<T>`, Global Query Filter, Migrations-Workflow, Supabase-Integration. |
+| [`KulturHub.Api/Api-instructions.md`](KulturHub.Api/Api-instructions.md) | Minimal-API-Endpunkte, Filter, OpenAPI je Bereich, `Program.cs`-Pipeline, JWT-/CORS-/JSON-Setup, `ErrorOr`-Mapping. |
+| [`KulturHub.UnitTests/UnitTests-instructions.md`](KulturHub.UnitTests/UnitTests-instructions.md) | Test-Stack, Namenskonventionen, Pflicht-Testfälle für jeden Handler, EF-Core in Tests. |
 
 ## 8. Voraussetzungen
 
 - **.NET 10 SDK** (`dotnet --version` muss 10.x ausgeben)
+- **`dotnet-ef`-Tool** (global), passend zur .NET-Version
 - **PostgreSQL 14+**, lokal oder über Supabase
 - **Supabase-Projekt** (Auth + Postgres) – eine kostenlose Tier-Instanz reicht
   für die Entwicklung
 - **JetBrains Rider** als bevorzugte IDE (das Projekt nutzt
   `KulturHub.sln.DotSettings.user`-Einstellungen)
-- Optional: **psql**-Client zum Einspielen der Migrationen
 
 ## 9. Konfiguration
 
@@ -245,6 +264,8 @@ und `Supabase:DiscoveryUrl` gehören **nicht** in den Git-Tree. Lege sie
 stattdessen über **User Secrets** oder **Umgebungsvariablen** an:
 
 ```bash
+dotnet tool install --global dotnet-ef --version 10.*
+
 cd KulturHub.Api
 dotnet user-secrets init   # einmalig pro Klone (UserSecretsId ist bereits gesetzt)
 
@@ -266,18 +287,20 @@ Alternativ funktionieren Umgebungsvariablen im Stil
 git clone <repo-url>
 cd KulturHub
 
-# 2. (Optional) Migrationen einspielen
-#    Voraussetzung: psql und eine erreichbare Datenbank
-psql "Host=...;Database=postgres;Username=postgres;Password=..." \
-     -f migrations/V001__organisations_and_memberships.sql
-psql "Host=...;Database=postgres;Username=postgres;Password=..." \
-     -f migrations/V002__change_log.sql
-# ... analog V003 bis V006
+# 2. dotnet-ef-Tool installieren (einmalig)
+dotnet tool install --global dotnet-ef --version 10.*
 
-# 3. Backend bauen
+# 3. User Secrets setzen (siehe oben)
+
+# 4. Datenbankmigrationen anwenden
+dotnet ef database update \
+  --project KulturHub.Infrastructure \
+  --startup-project KulturHub.Api
+
+# 5. Backend bauen
 dotnet build
 
-# 4. Backend starten
+# 6. Backend starten
 dotnet run --project KulturHub.Api
 ```
 
@@ -307,11 +330,12 @@ dotnet test --collect:"XPlat Code Coverage"
 Die Tests sind isoliert von Datenbank und HTTP:
 
 - **xUnit** als Test-Runner
-- **Moq** für Repository- und Service-Stubs
+- **Moq** für Service-Stubs (z. B. `IAuthProvider`, `TimeProvider`)
 - **FluentAssertions** für lesbare Asserts
+- **EF Core InMemory** oder SQLite-in-Memory für DbContext-Tests
 - Pro Handler eine eigene Testklasse (`{HandlerName}Tests.cs`)
 - Benennung: `MethodName_Scenario_ExpectedResult`, z. B.
-  `Handle_WhenBirthDateIsInFuture_ShouldReturnFailure`
+  `Handle_WhenNameIsEmpty_ShouldReturnValidationError`
 
 Konventionen sind in [`KulturHub.UnitTests/UnitTests-instructions.md`](KulturHub.UnitTests/UnitTests-instructions.md) festgehalten.
 
@@ -322,9 +346,9 @@ ausgewählt werden können:
 
 | Dokument | Audience | Inhalt |
 | --- | --- | --- |
-| `/openapi/public.json` | Anonyme Besucher | `GET /health` |
-| `/openapi/platform.json` | Angemeldete Nutzer | Auth, Organisationen, Memberships, Change Logs |
-| `/openapi/admin.json` | Administratoren | Einladungen verwalten |
+| `/openapi/public.json` | Anonyme Besucher | `GET /health`, künftige Public-Reads |
+| `/openapi/platform.json` | Angemeldete Nutzer | Eigene Organisationen, Memberships, Change Logs |
+| `/openapi/admin.json` | Administratoren | Systemweite Verwaltung, Invitations |
 
 Ausführliche Schema-Beschreibungen und „Try it out"-Funktionen stellt
 [Scalar](https://github.com/scalar/scalar) bereit (im Development-Modus
