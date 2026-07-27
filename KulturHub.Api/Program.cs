@@ -1,14 +1,8 @@
-using Dapper;
-using KulturHub.Api.Endpoints;
-using KulturHub.Api.Endpoints.Admin;
-using KulturHub.Api.Endpoints.Platform;
 using KulturHub.Api.Endpoints.Public;
 using KulturHub.Api.Extensions;
 using KulturHub.Application;
 using KulturHub.Infrastructure;
 using Scalar.AspNetCore;
-
-DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,10 +37,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthEndpoints();
-app.MapAuthEndpoints();
-app.MapInvitationEndpoints();
-app.MapOrganisationEndpoints();
-app.MapMembershipEndpoints();
-app.MapChangeLogEndpoints();
 
 app.Run();

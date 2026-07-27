@@ -8,7 +8,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\KulturHub.Domain\KulturHub.Domain.csproj" />
+        <ProjectReference Include="..\KulturHub.Infrastructure\KulturHub.Infrastructure.csproj" />
+        <ProjectReference Include="..\KulturHub.Domain\KulturHub.Domain.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -16,6 +17,10 @@
       <PackageReference Include="FluentValidation" Version="11.11.0" />
       <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Ports\" />
     </ItemGroup>
 
 </Project>

@@ -8,11 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\KulturHub.Application\KulturHub.Application.csproj" />
+        <ProjectReference Include="..\KulturHub.Domain\KulturHub.Domain.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Dapper" Version="2.1.72" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
       <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.7" />

@@ -1,9 +1,6 @@
-using KulturHub.Api.Extensions;
-using KulturHub.Application.Ports;
-
 namespace KulturHub.Api.Filters;
 
-public sealed class MembershipAuthorizationFilter(IMembershipRepository membershipRepository) : IEndpointFilter
+/*public sealed class MembershipAuthorizationFilter(IMembershipRepository membershipRepository) : IEndpointFilter
 {
     private const string RouteParameterName = "organisationId";
 
@@ -33,4 +30,4 @@ public sealed class MembershipAuthorizationFilter(IMembershipRepository membersh
 
         return await next(context);
     }
-}
+}*/

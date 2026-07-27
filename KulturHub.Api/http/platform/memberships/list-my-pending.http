@@ -1,3 +1,0 @@
-### List pending memberships of the authenticated user (requires valid JWT in @token)
-GET {{baseUrl}}/memberships/me/pending
-Authorization: Bearer {{token}}

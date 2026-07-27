@@ -1,8 +1,4 @@
-using KulturHub.Api.Extensions;
-using KulturHub.Application.Ports;
-
-namespace KulturHub.Api.Filters;
-
+/*
 public sealed class AdminAuthorizationFilter(IUserRepository authRepository) : IEndpointFilter
 {
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
@@ -23,3 +19,4 @@ public sealed class AdminAuthorizationFilter(IUserRepository authRepository) : I
         return await next(context);
     }
 }
+*/
