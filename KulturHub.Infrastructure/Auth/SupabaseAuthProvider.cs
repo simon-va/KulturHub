@@ -1,11 +1,15 @@
-/*
 using ErrorOr;
 using KulturHub.Application.Errors;
+using KulturHub.Application.Ports;
+
 namespace KulturHub.Infrastructure.Auth;
 
 public class SupabaseAuthProvider(Supabase.Client supabaseClient) : IAuthProvider
 {
-    public async Task<ErrorOr<AuthProviderSession>> SignUpAsync(string email, string password, CancellationToken cancellationToken = default)
+    public async Task<ErrorOr<AuthProviderSession>> SignUpAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default)
     {
         Supabase.Gotrue.Session? session;
         try
@@ -20,25 +24,9 @@ public class SupabaseAuthProvider(Supabase.Client supabaseClient) : IAuthProvide
         if (session?.User?.Id is null || session.AccessToken is null || session.RefreshToken is null)
             return AuthErrors.SignUpFailed;
 
-        return new AuthProviderSession(session.AccessToken, session.RefreshToken, Guid.Parse(session.User.Id));
-    }
-
-    public async Task<ErrorOr<AuthProviderSession>> SignInAsync(string email, string password, CancellationToken cancellationToken = default)
-    {
-        Supabase.Gotrue.Session? session;
-        try
-        {
-            session = await supabaseClient.Auth.SignIn(email, password);
-        }
-        catch (Exception ex) when (ex.Message.Contains("invalid login credentials", StringComparison.OrdinalIgnoreCase))
-        {
-            return AuthErrors.InvalidCredentials;
-        }
-
-        if (session?.User?.Id is null || session.AccessToken is null || session.RefreshToken is null)
-            return AuthErrors.SignInFailed;
-
-        return new AuthProviderSession(session.AccessToken, session.RefreshToken, Guid.Parse(session.User.Id));
+        return new AuthProviderSession(
+            session.AccessToken,
+            session.RefreshToken,
+            Guid.Parse(session.User.Id));
     }
 }
-*/

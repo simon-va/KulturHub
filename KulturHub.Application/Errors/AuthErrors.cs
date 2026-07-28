@@ -22,6 +22,14 @@ public static class AuthErrors
     public static readonly Error DeleteProviderFailed =
         Error.Failure("Auth.DeleteProviderFailed", "Failed to delete the user from the authentication provider.");
 
+    public static readonly Error UserCreationRolledBack =
+        Error.Failure("Auth.UserCreationRolledBack",
+            "Sign-up failed: the local user profile could not be saved. The authentication account has been rolled back.");
+
+    public static readonly Error CompensatingDeleteFailed =
+        Error.Failure("Auth.CompensatingDeleteFailed",
+            "Sign-up failed: the local user profile could not be saved AND the authentication account could not be rolled back. Manual cleanup is required.");
+
     public static Error SoleMemberOfOrganisations(IReadOnlyCollection<Guid> organisationIds) =>
         Error.Conflict(
             "Auth.SoleMemberOfOrganisations",

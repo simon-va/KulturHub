@@ -82,4 +82,26 @@ public class InvitationTests
         result.IsError.Should().BeTrue();
         result.FirstError.Code.Should().Be("Invitation.ExpiresAtMustBeAfterCreatedAt");
     }
+
+    [Fact]
+    public void Create_ShouldSetUsedByToNull()
+    {
+        var result = Invitation.Create("ABC-234", Now, Now.AddDays(1));
+
+        result.IsError.Should().BeFalse();
+        result.Value.UsedBy.Should().BeNull();
+        result.Value.IsUsed.Should().BeFalse();
+    }
+
+    [Fact]
+    public void MarkAsUsed_ShouldSetUsedBy()
+    {
+        var invitation = Invitation.Create("ABC-234", Now, Now.AddDays(1)).Value;
+        var userId = Guid.NewGuid();
+
+        invitation.MarkAsUsed(userId);
+
+        invitation.UsedBy.Should().Be(userId);
+        invitation.IsUsed.Should().BeTrue();
+    }
 }

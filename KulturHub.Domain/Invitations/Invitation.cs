@@ -10,7 +10,8 @@ public sealed class Invitation
         DateTime createdAt,
         DateTime expiresAt,
         bool isDeleted,
-        DateTime? deletedAt)
+        DateTime? deletedAt,
+        Guid? usedBy)
     {
         Id = id;
         Code = code;
@@ -18,6 +19,7 @@ public sealed class Invitation
         ExpiresAt = expiresAt;
         IsDeleted = isDeleted;
         DeletedAt = deletedAt;
+        UsedBy = usedBy;
     }
 
     public InvitationId Id { get; }
@@ -26,6 +28,9 @@ public sealed class Invitation
     public DateTime ExpiresAt { get; }
     public bool IsDeleted { get; private set; }
     public DateTime? DeletedAt { get; private set; }
+    public Guid? UsedBy { get; private set; }
+
+    public bool IsUsed => UsedBy.HasValue;
 
     public static ErrorOr<Invitation> Create(string code, DateTime createdAt, DateTime expiresAt)
     {
@@ -50,6 +55,9 @@ public sealed class Invitation
             createdAt,
             expiresAt,
             isDeleted: false,
-            deletedAt: null);
+            deletedAt: null,
+            usedBy: null);
     }
+
+    public void MarkAsUsed(Guid userId) => UsedBy = userId;
 }

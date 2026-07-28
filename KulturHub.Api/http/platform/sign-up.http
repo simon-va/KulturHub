@@ -1,0 +1,11 @@
+### Sign up a new user with an invitation code
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "email": "max@example.com",
+  "password": "Sicher123!",
+  "firstName": "Max",
+  "lastName": "Mustermann",
+  "invitationCode": "52W-JKN"
+}

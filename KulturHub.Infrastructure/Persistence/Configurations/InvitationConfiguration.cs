@@ -37,6 +37,9 @@ public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitatio
         builder.Property(x => x.DeletedAt)
             .HasColumnName("deleted_at");
 
+        builder.Property(x => x.UsedBy)
+            .HasColumnName("used_by");
+
         builder.HasIndex(x => x.Code).IsUnique();
 
         builder.HasQueryFilter(x => !x.IsDeleted);
