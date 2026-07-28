@@ -2,6 +2,7 @@ using System.Security.Claims;
 using KulturHub.Api.Extensions;
 using KulturHub.Api.Filters;
 using KulturHub.Application.Features.Platform.Organisations.CreateOrganisation;
+using KulturHub.Application.Features.Platform.Organisations.UpdateOrganisation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KulturHub.Api.Endpoints.Platform.Organisations;
@@ -35,6 +36,29 @@ public static class OrganisationEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status500InternalServerError)
             .WithName("Organisations_Create");
+
+        group.MapPut("/{organisationId:guid}", async (
+            Guid organisationId,
+            [FromBody] UpdateOrganisationRequest request,
+            ClaimsPrincipal user,
+            [FromServices] UpdateOrganisationHandler handler,
+            CancellationToken ct) =>
+        {
+            var result = await handler.HandleAsync(
+                user.GetUserId(), organisationId, request, ct);
+
+            return result.Match(
+                _ => Results.NoContent(),
+                errors => errors.ToResult());
+        })
+            .AddEndpointFilter<ValidationFilter<UpdateOrganisationRequest>>()
+            .AddEndpointFilter<MembershipAuthorizationFilter>()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .WithName("Organisations_Update");
 
         return app;
     }

@@ -2,6 +2,7 @@ using FluentValidation;
 using KulturHub.Application.Features.Admin.Invitations.CreateInvitation;
 using KulturHub.Application.Features.Platform.Auth.SignIn;
 using KulturHub.Application.Features.Platform.Organisations.CreateOrganisation;
+using KulturHub.Application.Features.Platform.Organisations.UpdateOrganisation;
 using KulturHub.Application.Features.Public.Auth.SignUp;
 using KulturHub.Application.Features.Public.Auth.ValidateInvitation;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<SignUpHandler>();
         services.AddScoped<ValidateInvitationHandler>();
         services.AddScoped<CreateOrganisationHandler>();
+        services.AddScoped<UpdateOrganisationHandler>();
 
         return services;
     }

@@ -19,16 +19,15 @@ public sealed class CreateOrganisationHandler(
         CreateOrganisationCommand command,
         CancellationToken cancellationToken)
     {
-        var trimmedName = command.Name.Trim();
-
         var nameAlreadyTaken = await db.Organisations
+            .IgnoreQueryFilters()
             .AsNoTracking()
-            .AnyAsync(o => o.Name == trimmedName && !o.IsDeleted, cancellationToken);
+            .AnyAsync(o => o.Name == command.Name && !o.IsDeleted, cancellationToken);
 
         if (nameAlreadyTaken)
             return OrganisationErrors.NameAlreadyExists;
 
-        var createResult = Organisation.Create(trimmedName, clock);
+        var createResult = Organisation.Create(command.Name, clock);
         if (createResult.IsError)
             return createResult.Errors;
 

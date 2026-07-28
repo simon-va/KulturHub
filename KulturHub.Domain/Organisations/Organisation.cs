@@ -21,7 +21,7 @@ public sealed class Organisation
     }
 
     public OrganisationId Id { get; }
-    public string Name { get; }
+    public string Name { get; private set; }
     public DateTime CreatedAt { get; }
     public bool IsDeleted { get; private set; }
     public DateTime? DeletedAt { get; private set; }
@@ -45,5 +45,17 @@ public sealed class Organisation
             createdAt,
             isDeleted: false,
             deletedAt: null);
+    }
+
+    public ErrorOr<Success> Update(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return OrganisationValidationErrors.NameRequired;
+
+        if (name.Length > MaxNameLength)
+            return OrganisationValidationErrors.NameTooLong;
+
+        Name = name;
+        return Result.Success;
     }
 }

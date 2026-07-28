@@ -1,6 +1,9 @@
+using KulturHub.Api.Extensions;
+using KulturHub.Application.Ports;
+
 namespace KulturHub.Api.Filters;
 
-/*public sealed class MembershipAuthorizationFilter(IMembershipRepository membershipRepository) : IEndpointFilter
+public sealed class MembershipAuthorizationFilter(IMembershipReader membershipReader) : IEndpointFilter
 {
     private const string RouteParameterName = "organisationId";
 
@@ -17,7 +20,7 @@ namespace KulturHub.Api.Filters;
                 statusCode: StatusCodes.Status500InternalServerError);
 
         var userId = user.GetUserId();
-        var isMember = await membershipRepository.IsMemberAsync(
+        var isMember = await membershipReader.IsMemberAsync(
             userId,
             organisationId,
             context.HttpContext.RequestAborted);
@@ -30,4 +33,4 @@ namespace KulturHub.Api.Filters;
 
         return await next(context);
     }
-}*/
+}
