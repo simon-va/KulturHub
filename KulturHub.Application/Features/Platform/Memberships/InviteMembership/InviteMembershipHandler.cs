@@ -37,7 +37,7 @@ public sealed class InviteMembershipHandler(
         if (membershipExists)
             return MembershipErrors.AlreadyExists;
 
-        var membershipResult = Membership.Create(user.Id, OrganisationId.From(command.OrganisationId), clock);
+        var membershipResult = Membership.Create(user.Id, OrganisationId.From(command.OrganisationId), MembershipStatus.Pending, clock);
         if (membershipResult.IsError)
             return membershipResult.Errors;
 
@@ -69,7 +69,8 @@ public sealed class InviteMembershipHandler(
             user.Id.Value,
             FullName: $"{user.FirstName} {user.LastName}",
             user.Email,
-            membershipResult.Value.JoinedAt,
+            membershipResult.Value.InvitedAt,
+            membershipResult.Value.DecidedAt,
             membershipResult.Value.Status);
     }
 }

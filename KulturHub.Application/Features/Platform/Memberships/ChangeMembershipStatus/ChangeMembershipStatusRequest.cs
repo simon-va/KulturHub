@@ -1,0 +1,3 @@
+namespace KulturHub.Application.Features.Platform.Memberships.ChangeMembershipStatus;
+
+public sealed record ChangeMembershipStatusRequest(MembershipChangeStatus Status);

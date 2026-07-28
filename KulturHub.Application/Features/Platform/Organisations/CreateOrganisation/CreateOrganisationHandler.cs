@@ -33,9 +33,10 @@ public sealed class CreateOrganisationHandler(
 
         var organisation = createResult.Value;
 
-        var membershipResult = Membership.CreateAccepted(
+        var membershipResult = Membership.Create(
             UserId.From(command.UserId),
             organisation.Id,
+            MembershipStatus.Accepted,
             clock);
 
         if (membershipResult.IsError)

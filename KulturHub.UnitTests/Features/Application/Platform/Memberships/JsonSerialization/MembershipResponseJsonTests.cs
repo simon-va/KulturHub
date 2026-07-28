@@ -21,7 +21,8 @@ public class MembershipResponseJsonTests
             UserId: Guid.Parse("22222222-2222-2222-2222-222222222222"),
             FullName: "Max Mustermann",
             Email: "max@example.com",
-            JoinedAt: new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            InvitedAt: new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            DecidedAt: new DateTime(2026, 1, 2, 12, 0, 0, DateTimeKind.Utc),
             Status: MembershipStatus.Accepted);
 
         var json = JsonSerializer.Serialize(response, Options);
@@ -40,7 +41,8 @@ public class MembershipResponseJsonTests
             UserId: Guid.Parse("22222222-2222-2222-2222-222222222222"),
             FullName: "Erika Musterfrau",
             Email: "erika@example.com",
-            JoinedAt: new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            InvitedAt: new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            DecidedAt: null,
             Status: MembershipStatus.Pending);
 
         var json = JsonSerializer.Serialize(response, Options);
@@ -62,7 +64,8 @@ public class MembershipResponseJsonTests
             UserId: Guid.NewGuid(),
             FullName: "Test",
             Email: "test@example.com",
-            JoinedAt: DateTime.UtcNow,
+            InvitedAt: DateTime.UtcNow,
+            DecidedAt: null,
             Status: status);
 
         var json = JsonSerializer.Serialize(response, Options);

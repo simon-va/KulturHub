@@ -10,14 +10,16 @@ public sealed class Membership
         MembershipId id,
         UserId userId,
         OrganisationId organisationId,
-        DateTime joinedAt,
+        DateTime invitedAt,
+        DateTime? decidedAt,
         MembershipStatus status,
         bool isDeleted)
     {
         Id = id;
         UserId = userId;
         OrganisationId = organisationId;
-        JoinedAt = joinedAt;
+        InvitedAt = invitedAt;
+        DecidedAt = decidedAt;
         Status = status;
         IsDeleted = isDeleted;
     }
@@ -25,42 +27,58 @@ public sealed class Membership
     public MembershipId Id { get; }
     public UserId UserId { get; }
     public OrganisationId OrganisationId { get; }
-    public DateTime JoinedAt { get; }
+    public DateTime InvitedAt { get; }
+    public DateTime? DecidedAt { get; private set; }
     public MembershipStatus Status { get; private set; }
     public bool IsDeleted { get; private set; }
 
     public static ErrorOr<Membership> Create(
         UserId userId,
         OrganisationId organisationId,
-        TimeProvider clock)
-    {
-        return CreateInternal(userId, organisationId, MembershipStatus.Pending, clock);
-    }
-
-    public static ErrorOr<Membership> CreateAccepted(
-        UserId userId,
-        OrganisationId organisationId,
-        TimeProvider clock)
-    {
-        return CreateInternal(userId, organisationId, MembershipStatus.Accepted, clock);
-    }
-
-    private static ErrorOr<Membership> CreateInternal(
-        UserId userId,
-        OrganisationId organisationId,
         MembershipStatus status,
         TimeProvider clock)
     {
-        var joinedAt = clock.GetUtcNow().UtcDateTime;
-        if (joinedAt.Kind != DateTimeKind.Utc)
-            return MembershipValidationErrors.JoinedAtMustBeUtc;
+        var now = clock.GetUtcNow().UtcDateTime;
+        if (now.Kind != DateTimeKind.Utc)
+            return MembershipValidationErrors.InvitedAtMustBeUtc;
+
+        var decidedAt = status == MembershipStatus.Pending ? null : (DateTime?)now;
 
         return new Membership(
             MembershipId.New(),
             userId,
             organisationId,
-            joinedAt,
+            invitedAt: now,
+            decidedAt,
             status,
             isDeleted: false);
+    }
+
+    public ErrorOr<Success> Accept(TimeProvider clock)
+    {
+        if (Status != MembershipStatus.Pending)
+            return MembershipValidationErrors.MustBePending;
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        if (now.Kind != DateTimeKind.Utc)
+            return MembershipValidationErrors.DecidedAtMustBeUtc;
+
+        Status = MembershipStatus.Accepted;
+        DecidedAt = now;
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> Reject(TimeProvider clock)
+    {
+        if (Status != MembershipStatus.Pending)
+            return MembershipValidationErrors.MustBePending;
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        if (now.Kind != DateTimeKind.Utc)
+            return MembershipValidationErrors.DecidedAtMustBeUtc;
+
+        Status = MembershipStatus.Rejected;
+        DecidedAt = now;
+        return Result.Success;
     }
 }

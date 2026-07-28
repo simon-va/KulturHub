@@ -28,9 +28,12 @@ public sealed class MembershipConfiguration : IEntityTypeConfiguration<Membershi
             .HasConversion(id => id.Value, v => OrganisationId.From(v))
             .IsRequired();
 
-        builder.Property(x => x.JoinedAt)
-            .HasColumnName("joined_at")
+        builder.Property(x => x.InvitedAt)
+            .HasColumnName("invited_at")
             .IsRequired();
+
+        builder.Property(x => x.DecidedAt)
+            .HasColumnName("decided_at");
 
         builder.Property(x => x.Status)
             .HasColumnName("status")

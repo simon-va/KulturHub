@@ -35,7 +35,7 @@ public class ListMyOrganisationsHandlerTests
         Organisation.Create(name, new FakeTimeProvider(NowUtc)).Value;
 
     private static Membership CreateMembership(Guid userId, Organisation organisation) =>
-        Membership.Create(UserId.From(userId), organisation.Id, new FakeTimeProvider(NowUtc)).Value;
+        Membership.Create(UserId.From(userId), organisation.Id, MembershipStatus.Pending, new FakeTimeProvider(NowUtc)).Value;
 
     [Fact]
     public async Task Handle_WhenUserIsMemberOfMultipleOrganisations_ShouldReturnAll()

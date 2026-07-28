@@ -30,6 +30,7 @@ public class MembershipReaderTests
         var membership = Membership.Create(
             UserId.From(UserGuid),
             OrganisationId.From(OrganisationGuid),
+            MembershipStatus.Pending,
             new FakeTimeProvider(NowUtc)).Value;
 
         if (status != MembershipStatus.Pending)
@@ -45,9 +46,10 @@ public class MembershipReaderTests
     [Fact]
     public async Task IsMemberAsync_WhenMembershipIsAccepted_ShouldReturnTrue()
     {
-        var membership = Membership.CreateAccepted(
+        var membership = Membership.Create(
             UserId.From(UserGuid),
             OrganisationId.From(OrganisationGuid),
+            MembershipStatus.Accepted,
             new FakeTimeProvider(NowUtc)).Value;
         var (sut, _) = CreateSut([membership]);
 
@@ -79,9 +81,10 @@ public class MembershipReaderTests
     [Fact]
     public async Task IsMemberAsync_WhenMembershipIsSoftDeleted_ShouldReturnFalse()
     {
-        var membership = Membership.CreateAccepted(
+        var membership = Membership.Create(
             UserId.From(UserGuid),
             OrganisationId.From(OrganisationGuid),
+            MembershipStatus.Accepted,
             new FakeTimeProvider(NowUtc)).Value;
         var (sut, db) = CreateSut([membership]);
 
@@ -106,9 +109,10 @@ public class MembershipReaderTests
     [Fact]
     public async Task IsMemberAsync_WhenOtherOrganisation_ShouldReturnFalse()
     {
-        var membership = Membership.CreateAccepted(
+        var membership = Membership.Create(
             UserId.From(UserGuid),
             OrganisationId.From(OtherOrganisationGuid),
+            MembershipStatus.Accepted,
             new FakeTimeProvider(NowUtc)).Value;
         var (sut, _) = CreateSut([membership]);
 

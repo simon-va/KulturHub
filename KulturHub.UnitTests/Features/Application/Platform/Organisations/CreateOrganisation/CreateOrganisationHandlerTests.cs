@@ -52,7 +52,8 @@ public class CreateOrganisationHandlerTests
         var membership = db.Memberships.Single();
         membership.UserId.Value.Should().Be(UserId);
         membership.OrganisationId.Value.Should().Be(result.Value.Id);
-        membership.JoinedAt.Should().Be(NowUtc);
+        membership.DecidedAt.Should().Be(NowUtc);
+        membership.InvitedAt.Should().Be(NowUtc);
         membership.Status.Should().Be(KulturHub.Domain.Memberships.MembershipStatus.Accepted);
 
         var changeLog = db.ChangeLogs.Single();

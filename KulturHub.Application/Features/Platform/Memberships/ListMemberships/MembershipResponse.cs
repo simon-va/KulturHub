@@ -7,5 +7,6 @@ public sealed record MembershipResponse(
     Guid UserId,
     string FullName,
     string Email,
-    DateTime JoinedAt,
+    DateTime InvitedAt,
+    DateTime? DecidedAt,
     MembershipStatus Status);

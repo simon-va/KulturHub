@@ -40,7 +40,7 @@ public class ListMembershipsHandlerTests
         User.Create(UserId.New(), email, firstName, lastName, new FakeTimeProvider(NowUtc)).Value;
 
     private static Membership CreateMembership(Guid userId, Organisation organisation) =>
-        Membership.Create(UserId.From(userId), organisation.Id, new FakeTimeProvider(NowUtc)).Value;
+        Membership.Create(UserId.From(userId), organisation.Id, MembershipStatus.Pending, new FakeTimeProvider(NowUtc)).Value;
 
     [Fact]
     public async Task Handle_WhenMultipleMembersExist_ShouldReturnAllSortedByFullName()
@@ -159,6 +159,7 @@ public class ListMembershipsHandlerTests
         result.Value.Single().FullName.Should().Be("Diana Doe");
         result.Value.Single().Email.Should().Be("diana@example.com");
         result.Value.Single().UserId.Should().Be(user.Id.Value);
-        result.Value.Single().JoinedAt.Should().Be(NowUtc);
+        result.Value.Single().DecidedAt.Should().BeNull();
+        result.Value.Single().InvitedAt.Should().Be(NowUtc);
     }
 }

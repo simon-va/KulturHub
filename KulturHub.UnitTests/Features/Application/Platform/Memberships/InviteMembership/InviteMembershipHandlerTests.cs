@@ -50,7 +50,7 @@ public class InviteMembershipHandlerTests
     }
 
     private static Membership CreateMembership(Guid userId, Organisation organisation) =>
-        Membership.Create(UserId.From(userId), organisation.Id, new FakeTimeProvider(NowUtc)).Value;
+        Membership.Create(UserId.From(userId), organisation.Id, MembershipStatus.Pending, new FakeTimeProvider(NowUtc)).Value;
 
     private static InviteMembershipCommand ValidCommand(Guid organisationId) =>
         new(organisationId, InviterUserId, InviteeEmail);
@@ -120,14 +120,16 @@ public class InviteMembershipHandlerTests
         result.Value.FullName.Should().Be("Invitee User");
         result.Value.Email.Should().Be(InviteeEmail);
         result.Value.Status.Should().Be(MembershipStatus.Pending);
-        result.Value.JoinedAt.Should().Be(NowUtc);
+        result.Value.InvitedAt.Should().Be(NowUtc);
+        result.Value.DecidedAt.Should().BeNull();
 
         db.Memberships.Count().Should().Be(1);
         var membership = db.Memberships.Single();
         membership.Status.Should().Be(MembershipStatus.Pending);
         membership.UserId.Value.Should().Be(invitee.Id.Value);
         membership.OrganisationId.Value.Should().Be(org.Id.Value);
-        membership.JoinedAt.Should().Be(NowUtc);
+        membership.InvitedAt.Should().Be(NowUtc);
+        membership.DecidedAt.Should().BeNull();
 
         db.ChangeLogs.Count().Should().Be(1);
         var changeLog = db.ChangeLogs.Single();

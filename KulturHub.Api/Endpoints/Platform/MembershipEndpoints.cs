@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using KulturHub.Api.Extensions;
 using KulturHub.Api.Filters;
+using KulturHub.Application.Features.Platform.Memberships.ChangeMembershipStatus;
 using KulturHub.Application.Features.Platform.Memberships.InviteMembership;
 using KulturHub.Application.Features.Platform.Memberships.ListMemberships;
 using Microsoft.AspNetCore.Mvc;
@@ -61,6 +62,36 @@ public static class MembershipEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status500InternalServerError)
             .WithName("Memberships_Invite");
+
+        app.MapPost("/memberships/{membershipId:guid}/status", async (
+            Guid membershipId,
+            [FromBody] ChangeMembershipStatusRequest request,
+            ClaimsPrincipal user,
+            [FromServices] ChangeMembershipStatusHandler handler,
+            CancellationToken ct) =>
+        {
+            var command = new ChangeMembershipStatusCommand(
+                membershipId,
+                user.GetUserId(),
+                request.Status);
+
+            var result = await handler.HandleAsync(command, ct);
+
+            return result.Match(
+                response => Results.Json(response, statusCode: StatusCodes.Status200OK),
+                errors => errors.ToResult());
+        })
+            .WithTags("Memberships")
+            .WithGroupName("platform")
+            .RequireAuthorization()
+            .AddEndpointFilter<ValidationFilter<ChangeMembershipStatusRequest>>()
+            .Produces<MembershipResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
+            .WithName("Memberships_ChangeStatus");
 
         return app;
     }
