@@ -48,6 +48,7 @@ public sealed class InviteMembershipHandler(
             new Dictionary<string, string?>
             {
                 ["email"] = user.Email,
+                ["status"] = MembershipStatus.Pending.ToString(),
             },
             clock);
 

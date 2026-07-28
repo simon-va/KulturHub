@@ -3,9 +3,9 @@ POST {{baseUrl}}/auth/signup
 Content-Type: application/json
 
 {
-  "email": "max@example.com",
+  "email": "anna@example.com",
   "password": "Sicher123!",
-  "firstName": "Max",
+  "firstName": "Anna",
   "lastName": "Mustermann",
-  "invitationCode": "52W-JKN"
+  "invitationCode": "M6N-R72"
 }

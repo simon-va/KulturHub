@@ -9,7 +9,6 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
-    .AddKulturHubJson()
     .AddKulturHubOpenApi()
     .AddApplication()
     .AddInfrastructure(builder.Configuration)

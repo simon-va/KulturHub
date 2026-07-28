@@ -1,2 +1,3 @@
 ### Admin: create invitation code
 POST {{baseUrl}}/admin/invitations
+Authorization: Bearer {{token}}

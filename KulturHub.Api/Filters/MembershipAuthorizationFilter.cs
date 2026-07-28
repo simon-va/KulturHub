@@ -3,6 +3,11 @@ using KulturHub.Application.Ports;
 
 namespace KulturHub.Api.Filters;
 
+/// <summary>
+/// Endpoint filter that allows access only to users with an <strong>accepted</strong> membership
+/// for the organisation identified by the <c>organisationId</c> route parameter.
+/// Pending or rejected memberships receive a 403 Forbidden response.
+/// </summary>
 public sealed class MembershipAuthorizationFilter(IMembershipReader membershipReader) : IEndpointFilter
 {
     private const string RouteParameterName = "organisationId";

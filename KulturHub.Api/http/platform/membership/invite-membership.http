@@ -4,5 +4,5 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "email": "invitee@example.com"
+  "email": "anna@example.com"
 }

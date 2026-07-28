@@ -55,7 +55,6 @@ KulturHub.Api/
 │   ├── ClaimsPrincipalExtensions.cs
 │   ├── CorsServiceCollectionExtensions.cs
 │   ├── ErrorExtensions.cs
-│   ├── JsonServiceCollectionExtensions.cs
 │   └── OpenApiServiceCollectionExtensions.cs
 ├── Filters/                         # Endpoint-Filter
 ├── Endpoints/
@@ -287,7 +286,7 @@ durch die `.ProducesProblem(...)`-Aufrufe im Endpoint auf.
 
 - Property-Naming: **camelCase** im Output, PascalCase im C#-Code.
 - `JsonSerializerOptions.DefaultIgnoreCondition` `WhenWritingNull`.
-- `AddKulturHubJson(...)` kapselt die JSON-Konfiguration.
+- Die JSON-Konfiguration erfolgt über die ASP.NET-Core-Defaults; eine eigene `AddKulturHubJson(...)` ist aktuell nicht nötig.
 
 ## Pipeline-Reihenfolge (`Program.cs`)
 

@@ -19,6 +19,7 @@ public sealed class MembershipReader(IAppDbContext db) : IMembershipReader
             .AnyAsync(
                 m => m.UserId == UserId.From(userId)
                     && m.OrganisationId == OrganisationId.From(organisationId)
-                    && !m.IsDeleted,
+                    && !m.IsDeleted
+                    && m.Status == MembershipStatus.Accepted,
                 cancellationToken);
 }
