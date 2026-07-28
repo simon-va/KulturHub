@@ -1,10 +1,7 @@
 # KulturHub.UnitTests
 
 Isolierte Tests für die Use-Case-Handler. Pro Handler wird **ein Test
-pro Pfad** durch den Handler-Code geschrieben. Andere Belange
-(Validatoren, Domain-Regeln, Generatoren) werden hier **nicht** getestet
-— sie sind bereits durch ihre eigenen Code-Pfade in den Handlern
-abgedeckt bzw. gehören in dedizierte Test-Projekte.
+pro Pfad** durch den Handler-Code geschrieben.
 
 ## Test-Stack
 
@@ -12,35 +9,28 @@ abgedeckt bzw. gehören in dedizierte Test-Projekte.
 - **Moq** für Interface-Stubs (z. B. `IInvitationCodeGenerator`,
   `IAuthProvider`, `IUserAdminClient`)
 - **FluentAssertions** für lesbare Asserts
-- **EF Core InMemory-Provider** (`UseInMemoryDatabase`) oder
-  **`Microsoft.EntityFrameworkCore.InMemory`** zum Testen des
-  `AppDbContext`. `InMemory` ist in Ordnung, wenn keine
-  datenbankspezifischen Features genutzt werden; sonst lieber
-  SQLite-in-Memory.
+- **EF Core InMemory-Provider** (`UseInMemoryDatabase`) für den
+  `AppDbContext`. In-Memory reicht, solange keine
+  datenbankspezifischen Features nötig sind.
 
 > **Hinweis:** `FluentValidation` wird im Test-Projekt **nicht**
 > referenziert. Validatoren leben im Application-Layer und werden
-> indirekt über den `HandleAsync`-Pfad des Handlers mitgetestet
-> (siehe „Was hier **nicht** getestet wird" weiter unten).
-> `FluentValidation.TestHelper` o. Ä. ist hier bewusst nicht im
-> Einsatz, damit keine parallelen Validator-Test-Suiten entstehen.
+> indirekt über den `HandleAsync`-Pfad des Handlers mitgetestet.
+> `FluentValidation.TestHelper` o. Ä. ist hier bewusst nicht im Einsatz,
+> damit keine parallelen Validator-Test-Suiten entstehen.
 
 ## Namenskonventionen
 
-- Testordner spiegeln das zu testende Projekt:
+Testordner spiegeln das zu testende Projekt:
 
 ```
 KulturHub.UnitTests/
-├── Features/
-│   └── Application/                  # ausschließlich Use-Case-Handler
-│       └── <Bereich>/                # z. B. Public/Auth, Admin/Invitations
-│           └── <UseCase>/
-│               └── <Handler>Tests.cs
+├── Features/Application/<Bereich>/<UseCase>/<Handler>Tests.cs
 └── TestHelpers/                      # projektweite Mocks und Factories
 ```
 
 - Pro Handler eine eigene Testklasse: `<HandlerName>Tests.cs`.
-- Testmethode: `MethodName_Scenario_ExpectedResult`.
+- Testmethode: `Handle_<Scenario>_Should<ExpectedResult>`.
 
 Beispiele:
 
@@ -53,13 +43,12 @@ Handle_WhenAllRetriesCollide_ShouldReturnCodeGenerationFailed
 ## Was hier getestet wird
 
 Nur die einzelnen **Pfade durch den Handler-Code**. Ein Pfad ist jede
-eindeutige Rückgabe bzw. jeder Seiteneffekt-Zweig, den der Handler
-annehmen kann (z. B. `return InvitationErrors.NotFound`,
-`return signUpResult.Errors`, persistierter User + markierte Einladung,
-Rollback-Aufruf an den Admin-Client).
+eindeutige Rückgabe bzw. jeder Seiteneffekt-Zweig (z. B.
+`return InvitationErrors.NotFound`, persistierter User + markierte
+Einladung, Rollback-Aufruf an den Admin-Client).
 
 Pro Handler wird **genau ein Test pro Pfad** geschrieben. Nicht mehr,
-nicht weniger. Das bedeutet:
+nicht weniger:
 
 - **Happy Path** – gültiger Request → erwartete Response und
   Seiteneffekte.
@@ -70,19 +59,33 @@ nicht weniger. Das bedeutet:
 
 ### Was bewusst **nicht** getestet wird
 
-- **Validatoren** (`SignUpRequestValidator`, etc.) – die
+- **Validatoren** (`SignUpRequestValidator`, etc.) — die
   Validierungslogik wird indirekt über den `HandleAsync`-Pfad des
-  Handlers geprüft (siehe `User.EmailInvalid`-Test im `SignUpHandler`).
-  Eigene `<Request>ValidatorTests.cs`-Dateien werden **nicht** angelegt.
+  Handlers geprüft. Eigene `<Request>ValidatorTests.cs`-Dateien werden
+  **nicht** angelegt.
 - **Domain-Entities** (`User`, `Invitation`) und
   **Domain-Services** (`InvitationCodeGenerator`) – gehören in ein
-  separates `KulturHub.Domain.Tests`-Projekt oder werden über die
-  Handler-Use-Cases indirekt mitgetestet. Hier keine
-  `Features/Domain/`-Ordner.
-- **Doppelte Absicherung** desselben Pfads (z. B. mehrere
+  separates `KulturHub.Domain.Tests`-Projekt.
+- **Doppelte Absicherung** desselben Pfads (mehrere
   `[Theory]`-Inline-Datasets für denselben Fehlerzweig) – ein Test pro
   Pfad reicht.
-- **Happy Path** und **Fehlerpfad**, die der Handler gar nicht hat.
+
+### Bewusste Ausnahmen
+
+Im aktuellen Projekt liegen zwei Testdateien, die keine
+Use-Case-Handler testen — sie sind als begründete Ausnahmen bewusst
+hier, nicht in eigenen Test-Projekten:
+
+- `Features/Application/Platform/Memberships/JsonSerialization/MembershipResponseJsonTests.cs`
+  — DTO-JSON-Serialisierung (wäre andernfalls `Application.Tests`).
+- `Infrastructure/Persistence/MembershipReaderTests.cs` — Adapter-Test
+  für den `IMembershipReader` (wäre andernfalls
+  `Infrastructure.Tests`).
+
+Beide werden aus diesem Test-Projekt mitgetestet, weil die Aufteilung
+in separate Test-Projekte den Aufwand nicht rechtfertigt. Neue
+Adapter- oder JSON-Serialisierungs-Tests sollten **diese** Konvention
+übernehmen, statt eigene Projekte aufzumachen.
 
 ## AAA-Struktur
 
@@ -93,15 +96,12 @@ Jeder Test folgt Arrange–Act–Assert. Aussagekräftige Variablennamen
 [Fact]
 public async Task Handle_WhenRequestIsValid_ShouldCreateOrganisation()
 {
-    // Arrange
     var db = CreateInMemoryDbContext();
     var auth = MockAuthProvider.WithUser(TestUsers.Admin);
     var sut = new CreateOrganisationHandler(db, auth, TimeProvider.System, NullLogger<CreateOrganisationHandler>.Instance);
 
-    // Act
     var result = await sut.HandleAsync(new CreateOrganisationRequest("Verein", "Beschreibung"), CancellationToken.None);
 
-    // Assert
     result.IsError.Should().BeFalse();
     result.Value.Name.Should().Be("Verein");
 }
@@ -109,20 +109,18 @@ public async Task Handle_WhenRequestIsValid_ShouldCreateOrganisation()
 
 ## Test-Fixtures und Mocks
 
-- Test-Daten und -Mocks liegen im jeweiligen Testordner oder in einer
-  `TestHelpers/`-Klasse, wenn sie projektweit geteilt werden.
-- `Mock.Of<T>()` für einfache Stubs, `new Mock<T>()` für Assertions
-  auf Interaktionen.
+- `new Mock<T>()` für Interface-Stubs, mit Setup-Ketten für
+  Assertions auf Interaktionen.
 - `TimeProvider` wird mit `FakeTimeProvider` aus
   `Microsoft.Extensions.TimeProvider.Testing` für deterministische
   Zeitstempel verwendet.
 
 ### Ports mocken statt Konstruktor-Tricks
 
-Wenn der Handler einen **Port** injiziert bekommt (z. B.
-`IInvitationCodeGenerator`), wird der Test den Port per Moq
-stubben — **nicht** den Konstruktor des Handlers per Reflection oder
-`InternalsVisibleTo` öffnen.
+Wenn der Handler einen **Port** injiziert bekommt
+(`IInvitationCodeGenerator`, `IAuthProvider`, `IUserAdminClient`),
+wird der Port per Moq gestubbt — **nicht** der Konstruktor des
+Handlers per Reflection oder `InternalsVisibleTo` geöffnet.
 
 ```csharp
 var queue = new Queue<string>(new[] { "AAA-BCD", "DEF-GHJ" });
@@ -132,8 +130,8 @@ generator.Setup(g => g.Generate())
 ```
 
 Wenn die Sequenz erschöpft ist, schlägt der Test mit einer klaren
-Exception fehl (statt ungewollt mit `string.Empty` zu arbeiten).
-So werden Endlos-Loops in der Implementierung früh sichtbar.
+Exception fehl. So werden Endlos-Loops in der Implementierung früh
+sichtbar.
 
 ### Test-Helfer `CreateSut` mit Sequenz-Input
 
@@ -176,31 +174,27 @@ synchron `SaveChanges()` und welche, die `SaveChangesAsync()` aufrufen.
 - `SaveChangesAsync` in Tests **ohne** `BeginTransaction` – jede
   Aktion ist atomar.
 - Global Query Filter (`!IsDeleted`) wird auch in In-Memory-Tests
-  angewandt – das ist erwünscht, weil es die Produktionslogik spiegelt.
+  angewandt – erwünscht, weil es die Produktionslogik spiegelt.
 - Tests, die soft-gelöschte Datensätze lesen müssen, nutzen
-  `IgnoreQueryFilters()` direkt am `DbSet`. Das ist die einzige
-  produktive Verwendung außerhalb von Admin/Recovery-Pfaden und
-  daher im Testcode ausdrücklich erlaubt. Wenn `IgnoreQueryFilters()`-
-  Pfade getestet werden, ist das im Testnamen explizit zu kennzeichnen.
+  `IgnoreQueryFilters()` direkt am `DbSet`. Wenn
+  `IgnoreQueryFilters()`-Pfade getestet werden, ist das im Testnamen
+  explizit zu kennzeichnen.
 - In-Memory-Provider **kennt keine Unique-Constraints** — Tests, die
   den `DbUpdateException`-Retry-Pfad absichern, müssen gegen eine
   echte Postgres-Instanz laufen (Integrationstest, separate Suite).
 
 ## Was hier **nicht** hineingehört
 
-- **Validator-Tests** — kein `<Request>ValidatorTests.cs`. Wenn die
-  Validierungslogik getestet werden soll, gehört das in ein
-  dediziertes Test-Projekt für Validatoren.
+- **Validator-Tests** — kein `<Request>ValidatorTests.cs`.
 - **Domain-Tests** — keine `Features/Domain/`-Ordner mit Tests für
-  `User`, `Invitation`, `InvitationCodeGenerator` etc. Diese Tests
-  gehören in ein separates `KulturHub.Domain.Tests`-Projekt.
+  `User`, `Invitation`, `InvitationCodeGenerator` etc.
 - **Api-/Endpoint-Tests** — keine HTTP-Tests (separates
-  Integration-Test-Projekt, nicht Teil dieser Anleitung).
+  Integration-Test-Projekt).
 - Keine echte Datenbankverbindung (Ausnahme: dedizierter
-  Integrationstest für DB-spezifische Features wie Constraints)
-- Keine produktiven `appsettings.json`-Werte
+  Integrationstest für DB-spezifische Features wie Constraints).
+- Keine produktiven `appsettings.json`-Werte.
 - Keine Reflection-Tricks oder `InternalsVisibleTo`-Konstrukte — wenn
-  Test-Determinismus nötig ist, wird ein Port-Interface gemockt
-- Keine leeren `Request`-Tests, wenn der Handler keinen Request nimmt
-- Keine zwei parallelen `CreateSut`-Helfer (z. B. „String" vs.
-  „Queue") — eine Helper-Methode pro Testklasse reicht
+  Test-Determinismus nötig ist, wird ein Port-Interface gemockt.
+- Keine leeren `Request`-Tests, wenn der Handler keinen Request nimmt.
+- Keine zwei parallelen `CreateSut`-Helfer — eine Helper-Methode pro
+  Testklasse reicht.

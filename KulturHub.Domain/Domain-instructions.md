@@ -25,105 +25,79 @@ Infrastructure über `IEntityTypeConfiguration<T>` definiert.
 
 ### Keine öffentlichen Setter
 
-Properties haben private Setter. Öffentliche `set`-Methoden werden
-vermeiden, damit Invariants nicht von außen umgangen werden können.
+Properties haben `private set` oder sind immutable. Öffentliche
+`set`-Methoden werden vermieden, damit Invariants nicht von außen
+umgangen werden können.
 
 ## Factory-Pattern
 
-Jede Entity besitzt zwei Factory-Methoden:
+Jede Entity besitzt mindestens eine `Create(...)`-Factory, die als
+`private constructor` + `public static ErrorOr<T> Create(...)` umgesetzt
+ist:
 
-- **`Create(...)`** – der reguläre Weg, eine neue Entität anzulegen.
-  - Setzt die vom System vergebenen Felder (`Id`, `CreatedAt`, `CreatedBy`).
-  - Validiert Pflichtfelder und Invariants.
-  - Gibt bei Validierungsfehlern `ErrorOr<T>` zurück oder wirft eine
-    `DomainException` für harte, nicht behebbare Fehler.
+- Setzt die vom System vergebenen Felder (`Id`, `CreatedAt`).
+- Validiert Pflichtfelder und Invariants.
+- Gibt bei Validierungsfehlern `ErrorOr<T>` zurück oder wirft eine
+  `DomainException` für harte, nicht behebbare Fehler.
 
-- **`Reconstitute(...)`** – wird ausschließlich vom Infrastructure-Layer
-  genutzt, um eine Entity aus der Datenbank wiederherzustellen.
-  - Setzt alle Properties ohne Validierung.
-  - Wird in `IEntityTypeConfiguration<T>`-Klassen oder im DbContext-Ladevorgang
-    verwendet, wenn Reflection-basierte Mapper nicht ausreichen.
-  - **Niemals** in Handlern oder Tests aufrufen.
+Hydration aus der Datenbank läuft über `HasConversion(id => id.Value, v => new XxxId(v))`
+plus privatem Konstruktor — eine separate `Reconstitute`-Factory wird
+**nicht** benötigt.
 
-**YAGNI-Hinweis:** `Reconstitute(...)` wird nur implementiert, wenn EF Core es
-tatsächlich braucht. Bei aktueller Konfiguration (siehe
-[`KulturHub.Infrastructure/Infrastructure-instructions.md`](../../KulturHub.Infrastructure/Infrastructure-instructions.md))
-ist `HasConversion` ausreichend — der Default-Konstruktor plus EF-Hydration
-kommen ohne explizite Factory aus.
-
-Beispiel-Signaturen:
+Beispiel:
 
 ```csharp
-public static ErrorOr<Organisation> Create(
-    string name,
-    string description,
-    UserId createdBy);
-
-public static Organisation Reconstitute(
-    OrganisationId id,
-    string name,
-    string description,
-    UserId createdBy,
-    DateTime createdAt,
-    DateTime? updatedAt,
-    UserId? updatedBy,
-    bool isDeleted,
-    DateTime? deletedAt);
+public static ErrorOr<Organisation> Create(string name, TimeProvider clock)
+{
+    if (string.IsNullOrWhiteSpace(name))
+        return OrganisationValidationErrors.NameRequired;
+    // ...
+    return new Organisation(/* ... */);
+}
 ```
 
 ## Soft-Delete-Felder
 
-Jede veränderliche Entity besitzt:
+Veränderliche Entities tragen:
 
 ```csharp
 public bool IsDeleted { get; private set; }
 public DateTime? DeletedAt { get; private set; }
 ```
 
-- Löschen passiert über eine `Delete(UserId deletedBy)`-Methode, die
-  `IsDeleted = true` und `DeletedAt = UtcNow` setzt.
-- Reaktivieren erfolgt analog über `Restore()`.
-- Das Filtern nach `IsDeleted` übernimmt EF Core per Global Query Filter
-  im Infrastructure-Layer. Die Domain selbst kennt kein Filtern.
-- Application-Handler und Reader greifen ohne `IgnoreQueryFilters()` auf
-  aktive Datensätze zu. Wer soft-gelöschte Zeilen lesen muss
-  (Recovery, Admin-Reports, passende Tests), nutzt `IgnoreQueryFilters()`
-  explizit und begründet den Aufruf.
-
-**YAGNI-Hinweis:** `Delete(...)` und `Restore()` werden **erst dann**
-implementiert, wenn ein Endpoint sie auch tatsächlich aufruft. Aktuell
-reichen `IsDeleted` und `DeletedAt` als Property, weil die EF-Configuration
-den Global Query Filter auch ohne Domain-Methoden anwenden kann. Wird der
-erste Delete-/Restore-Endpoint benötigt, kommen die Methoden mit passenden
-Tests zurück.
+EF Core blendet sie per Global Query Filter in Infrastructure aus
+(siehe `Infrastructure-instructions.md`). `Delete(...)` / `Restore()`-
+Methoden werden on-demand ergänzt, sobald ein Endpoint sie braucht
+(`Membership.Delete` ist aktuell der einzige Fall).
 
 ## DateTime-Semantik
 
-- **Alle `DateTime`-Werte sind UTC.**
+- **Alle `DateTime`-Werte sind UTC.** Factories erzwingen
+  `DateTimeKind.Utc` beim Setzen.
 - Bezeichner heißen konsequent `...At` (`CreatedAt`, `UpdatedAt`,
   `DeletedAt`, `PublishedAt`).
-- `DateTimeKind.Utc` wird beim Setzen erzwungen; lokale Zeiten werden in
-  Boundary-Code konvertiert (siehe `*-instructions.md` der API).
 
 ## IDs als strongly typed
 
 IDs sind `readonly record struct`-Typen, die einen `Guid` wrappen:
 
 ```csharp
-public readonly record struct OrganisationId(Guid Value)
+public readonly record struct UserId(Guid Value)
 {
-    public static OrganisationId New() => new(Guid.NewGuid());
+    public static UserId New() => new(Guid.NewGuid());
+    public static UserId From(Guid value) => new(value);
 }
 ```
 
-- Properties heißen `Id` (vom Typ `OrganisationId`, nicht `Guid`).
-- Vergleiche laufen über die zugrundeliegenden `Guid`s, sind aber durch
-  den Typ geschützt.
+- Properties heißen `Id` (vom Typ `XxxId`, nicht `Guid`).
+- Ausnahme: optionale Fremdschlüssel, die technisch kein eigener
+  Aggregate-Typ sind, dürfen als `Guid?` bleiben — bis ein eigener
+  `UserId?`-Bedarf entsteht.
 
 ## Domain-Validierungsfehler
 
-Validierungsfehler, die von Entity-Factories (`Create`, später auch
-`Update`) zurückgegeben werden, leben in einer **eigenen Datei**:
+Validierungsfehler, die von Entity-Factories zurückgegeben werden,
+leben in einer **eigenen Datei** pro Entity:
 
 ```
 KulturHub.Domain/
@@ -132,13 +106,9 @@ KulturHub.Domain/
     └── <Entity>ValidationErrors.cs   <-- hier
 ```
 
-- Datei- und Klassenname folgen dem Muster `<Entity>ValidationErrors`,
-  z. B. `InvitationValidationErrors`.
-- Die Klasse ist **`internal static`**, weil sie nur von der Factory der
+- Klasse ist **`internal static`**, weil sie nur von der Factory der
   eigenen Entity konsumiert wird.
-- Die in `Application/Errors/` lebenden `Error`-Sammlungen sind bewusst
-  separat — sie beschreiben Fehler aus dem Application-Handler (z. B.
-  `Conflict`, `NotFound`), nicht aus der Domain-Validierung.
+- Fehler heißen immer `Error.Validation("Entity.RuleName", "...")`.
 
 Beispiel:
 
@@ -150,46 +120,18 @@ internal static class InvitationValidationErrors
 }
 ```
 
-## Validierungs-Schichten
+Die in `Application/Errors/` lebenden `Error`-Sammlungen (`<X>Errors`)
+sind bewusst separat — sie beschreiben Fehler aus dem
+Application-Handler (`Conflict`, `NotFound`, etc.), nicht aus der
+Domain-Validierung.
 
-Validierung lebt in **zwei** Schichten, mit klarer Trennung.
+## Validierung: was hier passiert
 
-### Domain (`Create`-Factories)
-
-- Prüft **echte Invarianten**, die das Aggregat unabhängig vom Aufrufer
-  garantieren muss.
-- Beispiele: UTC für `CreatedAt`/`JoinedAt`, `ExpiresAt > CreatedAt`,
-  Format von intern erzeugten Codes, falls die Factory sie annimmt.
-- Antwort: `ErrorOr<T>` mit `Error.Validation(...)` aus der
-  `<Entity>ValidationErrors`-Klasse.
-
-### Application (`*RequestValidator`)
-
-- Prüft **Form & Shape** der eingehenden API-Requests.
-- Beispiele: `NotEmpty`, Längen (referenziert Domain-Konstanten),
-  Patterns.
-- Antwort: `ValidationResult` → 400 mit Property-Map im Endpoint-Filter.
-
-### Was nicht doppelt geprüft werden muss
-
-Shape-Checks (NotEmpty, Längen, Email-Format) **dürfen** sowohl im
-Validator als auch in der Domain-Factory stehen — als
-**Defense-in-Depth**, damit die Factory auch dann korrekt arbeitet,
-wenn sie aus Tests oder interner Logik direkt aufgerufen wird. In
-diesem Fall gilt:
-
-- **Konstante im Domain, Referenz im Validator.** Keine Magic-Numbers.
-- Domain-Check prüft denselben Wert, den der Validator bereits
-  durchgesetzt hat. Wer eine Regel ändert, ändert sie an genau einer
-  Stelle.
-
-### Was nur in eine Schicht gehört
-
-| Regel | Domain | Validator |
-|---|---|---|
-| Aggregat-Invariante (UTC, `ExpiresAt > CreatedAt`) | ✅ | ❌ (Daten kommen vom Server) |
-| Eindeutigkeit gegen DB | ❌ (Handler) | ❌ (Handler) |
-| Shape des Requests (Email-Format, Längen) | optional | ✅ |
+Factories prüfen **echte Invariants** (UTC-Zeit, `ExpiresAt > CreatedAt`,
+Code-Format, Pflichtfelder). Form & Shape des Requests (Längen,
+Email-Format) lebt im `Application`-Layer als FluentValidation. Die
+Konstante wird im Domain gehalten und vom Validator referenziert — so
+gilt die Regel an genau einer Stelle.
 
 ## Was hier **nicht** hineingehört
 
@@ -197,6 +139,4 @@ diesem Fall gilt:
 - Keine Validators (leben im Application-Layer als FluentValidation)
 - Keine DTOs oder Request-/Response-Modelle
 - Keine EF-Core-, Datenbank- oder Auth-Bezüge
-- Keine doppelten `Error`-Klassen — Domain-Errors heißen
-  `<Entity>ValidationErrors`, Application-Errors heißen `<BoundedContext>Errors`
-  oder `<Entity>Errors`.
+- Keine doppelten `Error`-Klassen für Application-Fehler

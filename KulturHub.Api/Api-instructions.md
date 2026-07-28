@@ -1,46 +1,18 @@
 # KulturHub.Api
 
-Enthält:
-
-- **HTTP-Endpunkte** (Minimal API)
-- ruft **Handler** aus dem Application-Layer auf
-- gibt **Responses** zurück
+Enthält HTTP-Endpunkte (Minimal API), ruft Handler aus dem
+Application-Layer auf und gibt Responses zurück.
 
 ## Aufgaben
 
 - Routing und HTTP-Binding
 - Authentifizierung und Autorisierung
-- Validierung der Requests (FluentValidation, vor Handler-Aufruf)
+- Request-Validierung (FluentValidation, vor Handler-Aufruf) — die
+  fachlichen Regeln lebt im Application-Layer (siehe
+  `Application-instructions.md` → Validierung)
 - OpenAPI-Dokumentation
-- Mapping von `ErrorOr<T>`-Ergebnissen auf HTTP-Antworten
-- Querschnittsthemen: Logging, CORS, JSON, Exception Handling
-
-## Validierung — was hier passiert (und was nicht)
-
-Diese Schicht ist **nicht** für fachliche Korrektheit zuständig. Sie ist
-die **Eingangsvalidierung** für ankommende API-Requests.
-
-- **Hier:** Form, Shape, Pattern, Längen, Pflichtfelder. Ausgeführt im
-  `ValidationFilter<TRequest>` per FluentValidation. Antwort: 400 mit
-  Property-bezogener Fehlerliste (`Results.ValidationProblem(...)`).
-- **Nicht hier:** fachliche Regeln, die System-Zustand brauchen
-  (Eindeutigkeit, Existenz, Berechtigung), Domain-Invarianten,
-  Authentifizierung.
-
-Die Trennung im Detail ist in den Layer-Instructions beschrieben:
-- [`KulturHub.Application/Application-instructions.md`](../Application/Application-instructions.md) → „Validierung"
-- [`KulturHub.Domain/Domain-instructions.md`](../Domain/Domain-instructions.md) → „Validierungs-Schichten"
-
-## Verschmelzung
-
-- **Application-Handler werden direkt aufgerufen** – keine weitere
-  Service-Schicht.
-- Validation läuft im Endpoint-Filter; bei `IsValid == false` wird mit
-  `ProblemDetails` (400) geantwortet und der Handler nicht aufgerufen.
-- **Authentifizierter User-Id** wird im Endpoint aus
-  `HttpContext.User` extrahiert und in den Request geschrieben oder via
-  `IAuthProvider` an den Handler gereicht.
-- Endpoints sind bewusst dünn. Geschäftslogik gehört in Handler.
+- Mapping von `ErrorOr<T>` auf HTTP-Antworten
+- Querschnittsthemen: Logging, CORS, Exception Handling
 
 ## Ordnerstruktur
 
@@ -49,13 +21,7 @@ KulturHub.Api/
 ├── Program.cs                       # Pipeline, Service-Registrierung
 ├── appsettings.json
 ├── appsettings.Development.json
-├── Extensions/                      # I-ServiceCollection-Extensions
-│   ├── ApplicationBuilderExtensions.cs
-│   ├── AuthServiceCollectionExtensions.cs
-│   ├── ClaimsPrincipalExtensions.cs
-│   ├── CorsServiceCollectionExtensions.cs
-│   ├── ErrorExtensions.cs
-│   └── OpenApiServiceCollectionExtensions.cs
+├── Extensions/                      # IServiceCollection-Extensions
 ├── Filters/                         # Endpoint-Filter
 ├── Endpoints/
 │   ├── Public/
@@ -81,20 +47,12 @@ Drei separate OpenAPI-Dokumente, auswählbar in Scalar:
 
 ## Endpoint-Konvention: eine Datei pro REST-Ressource
 
-Endpoints werden **ressourcenorientiert** organisiert. Das heißt: alle
-HTTP-Endpoints einer Ressource leben in **einer** statischen Klasse
-(`<Resource>Endpoints.cs`) und werden über **eine** `Map...`-Methode
-(`Map<Resource>Endpoints`) registriert.
-
-Beispiel — `InvitationEndpoints.cs`:
+Endpoints werden **ressourcenorientiert** organisiert. Alle HTTP-Endpoints
+einer Ressource leben in **einer** statischen Klasse
+(`<Resource>Endpoints.cs`) und werden über **eine** `Map<Resource>Endpoints`-
+Methode registriert.
 
 ```csharp
-using KulturHub.Api.Extensions;
-using KulturHub.Application.Features.Admin.Invitations.CreateInvitation;
-using Microsoft.AspNetCore.Mvc;
-
-namespace KulturHub.Api.Endpoints.Admin.Invitations;
-
 public static class InvitationEndpoints
 {
     public static IEndpointRouteBuilder MapInvitationEndpoints(this IEndpointRouteBuilder app)
@@ -112,6 +70,8 @@ public static class InvitationEndpoints
                 errors => errors.ToResult());
         })
             .Produces<CreateInvitationResponse>(StatusCodes.Status201Created)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
             .WithName("Invitations_Create");
 
         return app;
@@ -119,19 +79,31 @@ public static class InvitationEndpoints
 }
 ```
 
+- `MapGroup` wird **einmal pro Ressource** gesetzt. `WithTags(...)` und
+  `WithGroupName(...)` erben durch die Gruppe — **nicht** erneut pro
+  Endpoint aufrufen.
+- Endpoints sind **inline als Lambda** geschrieben. Wenn der Body länger
+  als ~10 Zeilen wird, lagert man Handler-Aufrufe in eine private
+  Hilfsmethode **derselben Klasse** aus (keine eigene Endpoint-Klasse).
+- Handler-Methoden heißen durchgängig **`HandleAsync(...)`**.
+- `WithName`-Strings folgen dem Muster **`<Resource>_<Verb>`**,
+  z. B. `"Invitations_Create"`, `"Memberships_Delete"`.
+- Pro Endpoint werden alle erwarteten Status-Codes via
+  `.Produces(...)` / `.ProducesProblem(...)` deklariert (Erfolg +
+  401/403/404/409 nach Bedarf).
+
 ### `[FromServices]` an jedem DI-getriebenen Lambda-Parameter
 
-Minimal APIs versuchen standardmäßig, **jeden** Lambda-Parameter aus dem
-Request-Body zu deserialisieren. Erst danach fällt die Binding-Logik auf
-den DI-Container zurück. Für komplexe Typen wie einen Handler
+Minimal APIs versuchen standardmäßig, jeden Lambda-Parameter aus dem
+Request-Body zu deserialisieren. Erst danach fällt die Binding-Logik
+auf den DI-Container zurück. Für komplexe Typen wie einen Handler
 schlägt die JSON-Deserialisierung fehl
 (`System.InvalidOperationException: Each parameter in the deserialization
 constructor on type '...' must bind to an object property or field on
 deserialization.`).
 
-Lösung: jeder DI-getriebene Lambda-Parameter — also Handler,
-zusätzliche Services, Repositorys — bekommt explizit `[FromServices]`
-aus dem Namespace `Microsoft.AspNetCore.Mvc`:
+Lösung: jeder DI-getriebene Lambda-Parameter bekommt explizit
+`[FromServices]` aus `Microsoft.AspNetCore.Mvc`:
 
 ```csharp
 group.MapPost("/", async (
@@ -140,91 +112,29 @@ group.MapPost("/", async (
 ```
 
 `CancellationToken` und einfache Bindings aus Route/Query brauchen
-kein `[FromServices]` — der Bindings-Mechanismus erkennt sie von selbst.
+kein `[FromServices]`.
 
-### Warum eine Datei pro Ressource?
+## Varianten für Endpunkte
 
-- **`MapGroup`** bündelt das gemeinsame Routing (`/admin/invitations`),
-  die Tags und die OpenAPI-Gruppe einmal für die ganze Ressource.
-  Doppelte `.WithGroupName(...)`-Aufrufe pro Endpoint entfallen.
-- Wenn ein zweiter Endpoint für dieselbe Ressource dazukommt
-  (z. B. `GET /admin/invitations`, `DELETE /admin/invitations/{id}`),
-  wandert er **in dieselbe Datei**. Cohesion schlägt Datei-Größe.
-- Der `Map<Resource>Endpoints`-Aufruf ist die einzige Stelle in
-  `Program.cs`, an der die Ressource auftaucht.
-
-### Konventionen innerhalb der Ressource
-
-- `MapGroup` wird **einmal pro Ressource** gesetzt.
-  `WithTags(...)` und `WithGroupName(...)` müssen nicht erneut pro
-  Endpoint aufgerufen werden — sie erben durch die Gruppe.
-- Endpoints sind **inline als Lambda** geschrieben. Wenn der Body
-  länger als ~10 Zeilen wird, lagert man die Handler-Aufrufe in eine
-  private Hilfsmethode **derselben Klasse** aus (nicht in eine eigene
-  Endpoint-Klasse).
-- Handler-Methoden heißen durchgängig **`HandleAsync(...)`** — auch
-  dann, wenn sie Querys, Requests oder nur IDs entgegennehmen. Das
-  hält den Aufruf-Site-Code uniform.
-- `WithName`-Strings folgen dem Muster **`<Resource>_<Verb>`**, z. B.
-  `"Invitations_Create"`, `"Invitations_List"`, `"Invitations_Delete"`.
-- Pro Endpoint werden alle erwarteten Status-Codes via `.Produces(...)`
-  bzw. `.ProducesProblem(...)` deklariert (mindestens die Erfolgs- und
-  die häufigsten Fehlerfälle 401/403/404/409).
-
-### `Produces` für Fehlerfälle
-
-Das Snippet aus dem Vorgänger-Code deklariert systematisch die
-Fehlerstatus-Codes:
-
-```csharp
-.ProducesProblem(StatusCodes.Status401Unauthorized)
-.ProducesProblem(StatusCodes.Status403Forbidden)
-.ProducesProblem(StatusCodes.Status404NotFound)
-.ProducesProblem(StatusCodes.Status409Conflict)
-```
-
-Diese Liste ist Bestandteil des Endpoints und gehört in die
-Ressource-Datei. Sie macht den OpenAPI-Contract vollständig und
-ermöglicht Scalar/REST-Client-Tools, Fehlerantworten beim
-„Try it out" korrekt zu modellieren.
-
-## Varianten für Endpunkte ohne Body, ohne Auth oder ohne Validator
-
-**Kein Request-Body:** Inline-Lambda nimmt nur den Handler und
-`CancellationToken`. Der Handler hat entsprechend keine
-Request-Parameter (`HandleAsync(CancellationToken)`). Es gibt keine
-`Request`-Klasse im Application-Layer und keinen
-`AddValidationFilter<>`. Beispiel oben.
-
-**Kein Auth:** wenn der Endpoint nicht durch Auth geschützt ist
-(z. B. weil noch keine User existieren), wird schlicht kein
-`.RequireAuthorization()` und kein `AddEndpointFilter<>` aufgerufen.
-
-**Auth via `RequireAuthorization()`:** der Standard-Mechanismus. Er
-reicht aus, solange nur „authentifiziert oder nicht" geprüft werden
-muss.
-
-**Autorisierungs-Filter:** für rollen- oder organisationsbezogene
-Checks (z. B. „nur Admins", „nur Mitglieder einer Org"). Siehe
-unten — der Mechanismus ist in der Doku erwähnt, aber die konkreten
-Filter-Klassen werden reaktiviert, sobald die Auth-User-Story
-umgesetzt wird.
+- **Kein Request-Body:** Inline-Lambda nimmt nur den Handler und
+  `CancellationToken`. Es gibt keine `Request`-Klasse im
+  Application-Layer und keinen `AddValidationFilter<>`. Beispiel oben.
+- **Kein Auth:** kein `.RequireAuthorization()` und kein
+  `AddEndpointFilter<>`.
+- **Auth via `RequireAuthorization()`:** Standard-Mechanismus. Reicht
+  aus, solange nur „authentifiziert oder nicht" geprüft werden muss.
+- **Rollen-/Org-Autorisierung:** per Endpoint-Filter
+  (`AdminAuthorizationFilter`, `MembershipAuthorizationFilter`).
 
 ### 201 Created ohne Location-Header
 
-Wenn ein `POST`-Endpoint eine Ressource erzeugt, aber kein `GET`-Endpoint
-existiert, der die Ressource unter einer konkreten URL zurückgibt, wird
-**keine** Location-URL generiert. Statt
-`Results.Created(uri, response)` wird
-`Results.Json(response, statusCode: StatusCodes.Status201Created)`
-benutzt. Der 201-Status bleibt erhalten, der Body enthält die volle
-Response. Sobald der passende `GET`-Endpoint existiert, kann zurück auf
-`Results.Created(uri, response)` gewechselt werden.
+Wenn ein `POST` keine `GET`-Ressource-URL liefern kann, wird
+**keine** Location-URL generiert. Statt `Results.Created(uri, response)`
+nutzt man `Results.Json(response, statusCode: StatusCodes.Status201Created)`.
 
 ## Mapping ErrorOr → HTTP
 
-- `error.ToResult()` zentral in `ErrorExtensions.cs`.
-- Mapping:
+`errors.ToResult()` liegt zentral in `Extensions/ErrorExtensions.cs`.
 
 | Error-Typ            | HTTP-Status |
 |----------------------|-------------|
@@ -235,9 +145,7 @@ Response. Sobald der passende `GET`-Endpoint existiert, kann zurück auf
 | `Error.Conflict`     | 409         |
 | alles andere         | 500         |
 
-- Format: `application/problem+json` (RFC 7807).
-
-### Beispiel mit `Match`
+Format: `application/problem+json` (RFC 7807).
 
 ```csharp
 return result.Match(
@@ -245,48 +153,50 @@ return result.Match(
     errors => errors.ToResult());
 ```
 
-`errors.ToResult()` produziert eine ProblemDetails-Antwort nach der
-Tabelle oben. Im OpenAPI-Dokument taucht diese Fehlermodellierung
-durch die `.ProducesProblem(...)`-Aufrufe im Endpoint auf.
-
 ## Filters (Mechanismus)
 
-- Unter `KulturHub.Api/Filters/` liegen Endpoint-Filter (z. B.
-  `AdminAuthorizationFilter`, `MembershipAuthorizationFilter`,
-  `ValidationFilter<TRequest>`).
-- Sie werden in der Endpoint-Pipeline per
-  `.AddEndpointFilter<TFilter>()` eingehängt.
-- Der bevorzugte Einsatzort ist die `MapGroup(...)` der jeweiligen
-  Ressource — so erbt jeder Endpoint dieser Ressource den Filter
-  automatisch.
-- **Reihenfolge:** `.RequireAuthorization()` zuerst (erzwingt gültigen
-  JWT und antwortet mit 401 ohne Body), danach
-  `.AddEndpointFilter<AdminAuthorizationFilter>()` (DB-Lookup via
-  `IUserAdminReader` und 403 bei fehlender Admin-Rolle). So lehnt die
-  JWT-Pipeline bereits nicht authentifizierte Requests ab, bevor der
-  Filter überhaupt einen DB-Roundtrip macht.
+- Unter `Filters/` liegen Endpoint-Filter
+  (`ValidationFilter<TRequest>`, `AdminAuthorizationFilter`,
+  `MembershipAuthorizationFilter`).
+- Eingehängt per `.AddEndpointFilter<TFilter>()` — bevorzugt auf der
+  `MapGroup(...)` der Ressource, sodass jeder Endpoint der Ressource
+  den Filter erbt.
+- **Reihenfolge:** `.RequireAuthorization()` zuerst (401 ohne Body bei
+  fehlendem JWT), danach `.AddEndpointFilter<AdminAuthorizationFilter>()`
+  (DB-Lookup via `IUserAdminReader` und 403 bei fehlender Rolle).
+
+`Organisations_Update` ist eine bewusste Ausnahme: die Route liegt unter
+`/organisations/{id}` und nicht unter
+`/organisations/{id}/memberships`, also wird der
+`MembershipAuthorizationFilter` per Endpoint statt per Group
+angehängt.
 
 ## Auth
 
 - **JWT-Bearer** über Supabase OIDC.
-- Discovery-URL liegt in der Konfiguration
-  (`Supabase:DiscoveryUrl`); Tokens werden gegen den ausgestellten
-  Signing-Key validiert.
-- Der `sub`-Claim ist der stabile Nutzer-Identifier; er wird in der
-  Application-Schicht als `UserId` verwendet.
-- `AddKulturHubAuth(...)` kapselt die JWT-Konfiguration.
+- Discovery-URL liegt in der Konfiguration (`Supabase:DiscoveryUrl`);
+  Tokens werden gegen den ausgestellten Signing-Key validiert.
+- `sub`-Claim ist der stabile Nutzer-Identifier; er wird im Endpoint
+  via `ClaimsPrincipal.GetUserId()` (`Extensions/ClaimsPrincipalExtensions.cs`)
+  extrahiert und in den Command/Request geschrieben.
+- Handler rufen **nicht** selbst `auth.GetCurrentUserId()` auf — siehe
+  `Application-instructions.md` → Identity-Threading.
+- `AddKulturHubAuth(...)` in `Extensions/AuthServiceCollectionExtensions.cs`
+  kapselt die JWT- und Supabase-Konfiguration.
 
 ## CORS
 
-- Erlaubte Origins kommen aus der Konfiguration
-  (`Cors:AllowedOrigins`).
-- Im Dev ist standardmäßig `http://localhost:4200` (Angular) erlaubt.
+Erlaubte Origins kommen aus der Konfiguration
+(`Cors:AllowedOrigins`). Standard im Dev ist `http://localhost:4200`
+(Angular) und wird in `appsettings.Development.json` gepflegt — nicht
+im Code.
 
 ## JSON
 
-- Property-Naming: **camelCase** im Output, PascalCase im C#-Code.
-- `JsonSerializerOptions.DefaultIgnoreCondition` `WhenWritingNull`.
-- Die JSON-Konfiguration erfolgt über die ASP.NET-Core-Defaults; eine eigene `AddKulturHubJson(...)` ist aktuell nicht nötig.
+Es gibt keine eigene `AddKulturHubJson(...)`-Konfiguration.
+ASP.NET-Core-Defaults: camelCase-Output, PascalCase im C#-Code. Wenn
+später `WhenWritingNull` o. Ä. nötig wird, kommt eine zentrale
+Erweiterung dazu.
 
 ## Pipeline-Reihenfolge (`Program.cs`)
 
@@ -298,36 +208,31 @@ UseAuthentication()
 UseAuthorization()
 ```
 
-`MapOpenApi` und `MapScalarApiReference` werden nur in `IsDevelopment()`
-registriert.
+`MapOpenApi` und `MapScalarApiReference` werden nur in
+`IsDevelopment()` registriert.
 
 ## Beispielrequests
 
-- Pro Bereich ein Unterordner in `KulturHub.Api/http/<bereich>/`.
-- Dateiendung `.http`, ausführbar mit der VS-Code-Extension
-  *REST Client* oder JetBrains Rider.
-- Beispiel: `KulturHub.Api/http/admin/create-invitation.http`.
+Pro Bereich ein Unterordner in `KulturHub.Api/http/<bereich>/`. Datei­
+endung `.http`, ausführbar mit der VS-Code-Extension *REST Client*
+oder JetBrains Rider.
 
-## Logging in der API
+## Logging
 
 `WebApplication.CreateBuilder(...)` registriert die
-Default-Logging-Provider (`Console`, `Debug`, `EventSource`) automatisch.
-Weitere Senken (Serilog, OTel) werden bei Bedarf in `Program.cs`
-aktiviert, ohne dass Handler angepasst werden müssen — sie nutzen
-ausnahmslos `ILogger<T>`.
+Default-Logging-Provider (`Console`, `Debug`, `EventSource`)
+automatisch. Weitere Senken (Serilog, OTel) werden bei Bedarf in
+`Program.cs` aktiviert, ohne dass Handler angepasst werden müssen — sie
+nutzen ausnahmslos `ILogger<T>`.
 
 ## Was hier **nicht** hineingehört
 
-- Keine Business-Logik (gehört in Handler)
-- Keine direkten DbContext-Aufrufe (gehört in Handler/Application)
-- Keine Validatoren (gehört in Application, sofern der Request Daten hat)
-- Keine Entity-Mappings (gehört in Infrastructure-Konfigurationen)
+- Keine Business-Logik (Handler)
+- Keine direkten DbContext-Aufrufe
+- Keine Validatoren
+- Keine Entity-Mappings
 - Keine `Request`-Klasse, wenn der Endpoint keinen Body erwartet
 - Keine `Results.Created(uri, ...)` ohne existierenden `GET`-Endpoint
 - Keine separate `<Verb><Resource>Endpoint.cs`-Datei pro Use-Case
-  (eine Datei pro Ressource reicht)
-- Keine doppelten `.WithGroupName(...)`-Aufrufe pro Endpoint (sie
-  erben durch die `MapGroup`)
-- Keine DI-getriebenen Lambda-Parameter ohne `[FromServices]` (ohne
-  den Attribut versucht der Body-Binder den Handler per JSON zu
-  deserialisieren und wirft eine `InvalidOperationException`)
+- Keine doppelten `.WithGroupName(...)` pro Endpoint
+- Keine DI-getriebenen Lambda-Parameter ohne `[FromServices]`
