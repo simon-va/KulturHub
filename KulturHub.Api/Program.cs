@@ -1,6 +1,5 @@
-using KulturHub.Api.Endpoints.Admin.Invitations;
-using KulturHub.Api.Endpoints.Platform.Auth;
-using KulturHub.Api.Endpoints.Platform.Organisations;
+using KulturHub.Api.Endpoints.Admin;
+using KulturHub.Api.Endpoints.Platform;
 using KulturHub.Api.Endpoints.Public;
 using KulturHub.Api.Extensions;
 using KulturHub.Application;
@@ -43,5 +42,6 @@ app.MapHealthEndpoints();
 app.MapInvitationEndpoints();
 app.MapAuthEndpoints();
 app.MapOrganisationEndpoints();
+app.MapMembershipEndpoints();
 
 app.Run();

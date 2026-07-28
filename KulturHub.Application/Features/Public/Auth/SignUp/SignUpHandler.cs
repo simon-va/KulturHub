@@ -2,7 +2,6 @@ using ErrorOr;
 using KulturHub.Application.Abstractions.Persistence;
 using KulturHub.Application.Errors;
 using KulturHub.Application.Ports;
-using KulturHub.Domain.Invitations;
 using KulturHub.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

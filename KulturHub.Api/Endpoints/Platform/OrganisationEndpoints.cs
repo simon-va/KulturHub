@@ -6,7 +6,7 @@ using KulturHub.Application.Features.Platform.Organisations.ListMyOrganisations;
 using KulturHub.Application.Features.Platform.Organisations.UpdateOrganisation;
 using Microsoft.AspNetCore.Mvc;
 
-namespace KulturHub.Api.Endpoints.Platform.Organisations;
+namespace KulturHub.Api.Endpoints.Platform;
 
 public static class OrganisationEndpoints
 {

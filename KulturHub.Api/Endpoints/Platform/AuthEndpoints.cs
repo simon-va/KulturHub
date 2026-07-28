@@ -5,7 +5,7 @@ using KulturHub.Application.Features.Public.Auth.SignUp;
 using KulturHub.Application.Features.Public.Auth.ValidateInvitation;
 using Microsoft.AspNetCore.Mvc;
 
-namespace KulturHub.Api.Endpoints.Platform.Auth;
+namespace KulturHub.Api.Endpoints.Platform;
 
 public static class AuthEndpoints
 {

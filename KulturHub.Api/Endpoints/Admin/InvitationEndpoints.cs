@@ -3,7 +3,7 @@ using KulturHub.Api.Filters;
 using KulturHub.Application.Features.Admin.Invitations.CreateInvitation;
 using Microsoft.AspNetCore.Mvc;
 
-namespace KulturHub.Api.Endpoints.Admin.Invitations;
+namespace KulturHub.Api.Endpoints.Admin;
 
 public static class InvitationEndpoints
 {

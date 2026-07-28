@@ -1,7 +1,5 @@
 using ErrorOr;
 using KulturHub.Application.Abstractions.Persistence;
-using KulturHub.Domain.Memberships;
-using KulturHub.Domain.Organisations;
 using KulturHub.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

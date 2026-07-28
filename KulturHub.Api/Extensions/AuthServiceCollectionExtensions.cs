@@ -1,5 +1,4 @@
 using System.IdentityModel.Tokens.Jwt;
-using KulturHub.Application.Ports;
 using KulturHub.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
