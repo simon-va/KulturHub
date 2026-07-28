@@ -4,12 +4,12 @@ Diese Datei dient zur besseren Planung von neuen Funktionen:
 
 ## User-Story
 Als Nutzer
-möchte ich Daten meiner Organisation ändern
-um diese aktuell zu halten
+möchte ich eine Liste von Organisationen zu denen ich gehöre erhalten
+um zu wissen, für welche Organisationen ich Inhalte erstellen kann
 
 ### Akzeptanzkriterien
-- Es gibt einen PUT Endpunkt, um die Informationen zu einer Organisation (aktuell nur Name) zu aktualisieren
-- Es wird ein Changelog erstellt
-- Der Endpunkt hat .RequireAuthorization
-- Wir brauchen einen Filter, der Prüft, ob der User auch in der Organisation ist, für die er das Update durchführen möchte (Code aus V1 wurde für Inspiration eingefügt)
-- Der Endpunkt liegt in platform/organisations
+- Es gibt einen GET Endpunkt, der eine Liste von Organisationen zurückgibt, bei denen der Nutzer einen Membershipeintrag hat
+- Der Endpunkt ist in platform/organisations
+- route `/mine`
+- Response: Id und Name
+- Endpunkt ist mit .RA abgesichert.

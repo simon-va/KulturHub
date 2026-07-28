@@ -1,0 +1,3 @@
+### List organisations the current user is a member of
+GET {{baseUrl}}/organisations/mine
+Authorization: Bearer {{token}}

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using KulturHub.Api.Extensions;
 using KulturHub.Api.Filters;
 using KulturHub.Application.Features.Platform.Organisations.CreateOrganisation;
+using KulturHub.Application.Features.Platform.Organisations.ListMyOrganisations;
 using KulturHub.Application.Features.Platform.Organisations.UpdateOrganisation;
 using Microsoft.AspNetCore.Mvc;
 
@@ -59,6 +60,22 @@ public static class OrganisationEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithName("Organisations_Update");
+
+        group.MapGet("/mine", async (
+            ClaimsPrincipal user,
+            [FromServices] ListMyOrganisationsHandler handler,
+            CancellationToken ct) =>
+        {
+            var result = await handler.HandleAsync(user.GetUserId(), ct);
+
+            return result.Match(
+                response => Results.Json(response, statusCode: StatusCodes.Status200OK),
+                errors => errors.ToResult());
+        })
+            .Produces<IReadOnlyList<MyOrganisationResponse>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
+            .WithName("Organisations_ListMine");
 
         return app;
     }
