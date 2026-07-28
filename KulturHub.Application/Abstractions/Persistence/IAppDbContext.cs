@@ -1,3 +1,4 @@
+using KulturHub.Domain.ChangeLogs;
 using KulturHub.Domain.Invitations;
 using KulturHub.Domain.Memberships;
 using KulturHub.Domain.Organisations;
@@ -12,6 +13,7 @@ public interface IAppDbContext
     DbSet<User> Users { get; }
     DbSet<Organisation> Organisations { get; }
     DbSet<Membership> Memberships { get; }
+    DbSet<ChangeLog> ChangeLogs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

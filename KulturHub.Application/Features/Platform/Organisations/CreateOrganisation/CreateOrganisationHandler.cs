@@ -1,6 +1,7 @@
 using ErrorOr;
 using KulturHub.Application.Abstractions.Persistence;
 using KulturHub.Application.Errors;
+using KulturHub.Domain.ChangeLogs;
 using KulturHub.Domain.Memberships;
 using KulturHub.Domain.Organisations;
 using KulturHub.Domain.Users;
@@ -41,8 +42,19 @@ public sealed class CreateOrganisationHandler(
         if (membershipResult.IsError)
             return membershipResult.Errors;
 
+        var changeLogResult = ChangeLog.Create(
+            organisation.Id,
+            UserId.From(command.UserId),
+            "Organisation wurde erstellt",
+            new Dictionary<string, string?> { ["name"] = organisation.Name },
+            clock);
+
+        if (changeLogResult.IsError)
+            return changeLogResult.Errors;
+
         db.Organisations.Add(organisation);
         db.Memberships.Add(membershipResult.Value);
+        db.ChangeLogs.Add(changeLogResult.Value);
 
         await db.SaveChangesAsync(cancellationToken);
 

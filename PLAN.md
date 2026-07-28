@@ -4,14 +4,13 @@ Diese Datei dient zur besseren Planung von neuen Funktionen:
 
 ## User-Story
 Als Nutzer
-möchte ich eine Organisation erstllen
-um Inhalte auf der Plattform veröffentlichen zu können
+möchte ich meine Aktivitäten über ChangeLogs dokumentieren
+um diese später nachvollziehen zu können 
 
 ### Akzeptanzkriterien
-- Es gibt einen Endpunkt, um eine Organisation zu erstellen
-- Er befindet sich in platform/organisations
-- Die Datenbank speichert für Organisationen Id, Name, CreatedAt, IsDeleted (DeletedAt und DeletedBy brauchen wir nicht, weil das später im ChangeLog gespeichert wird)
-- Für die Zuordnung zwischen Organisation und User gibt es eine memberships-Tabelle
-- Die Memberships-Tabelle hat Id, UserId, OrganisationId, JoinedAt und IsDeleted.
-- Als Input für den CreateOrganisationHandler werden nur Name (FromBody) und UserId gebraucht
-- Response enthält Id, Name und CreatedAt der Organisation
+- Wenn eine Organisation erstellt wird, soll ein ChangeLog geschrieben werden.
+- Es gibt eine neue Tabelle change_logs mit den Feldern Id, OrganisationId, CreatedBy, Message, Data, CreatedAt und IsDeleted
+- Alle Felder müssen ausgefüllt sein
+- IsDeleted wird später nur genutzt, wenn eine Organisation gelöscht wird, wird daher beim Erstellen immer mit false erstellt
+- Data ist ein JSON Feld, in das dynamisch Werte geschrieben werden können.
+- Die Message ist beim Erstellen der Organisation "Organisation wurde erstellt" und in Data steht der Name

@@ -1,4 +1,5 @@
 using KulturHub.Application.Abstractions.Persistence;
+using KulturHub.Domain.ChangeLogs;
 using KulturHub.Domain.Invitations;
 using KulturHub.Domain.Memberships;
 using KulturHub.Domain.Organisations;
@@ -13,6 +14,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<User> Users => Set<User>();
     public DbSet<Organisation> Organisations => Set<Organisation>();
     public DbSet<Membership> Memberships => Set<Membership>();
+    public DbSet<ChangeLog> ChangeLogs => Set<ChangeLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

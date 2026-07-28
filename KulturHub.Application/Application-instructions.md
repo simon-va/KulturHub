@@ -122,8 +122,8 @@ Analog entfallen `RequestValidator.cs` und `AddValidationFilter<>` im Endpoint.
    über `SaveChangesAsync`).
 4. **Change-Log-Eintrag** schreiben, sofern die Aktion nicht rein lesend
    ist und nicht explizit übersprungen wurde (z. B. Admin-Aktionen ohne
-   Organisationsbezug). Idempotenz: Log-Einträge gehen über den
-   `IChangeLogWriter`-Port (siehe Infrastructure-Implementierung).
+   Organisationsbezug). Eintrag wird als `ChangeLog`-Domain-Objekt über
+   `db.ChangeLogs.Add(...)` im selben `SaveChangesAsync` mitpersistiert.
 5. **Response** als `ErrorOr<TResponse>` zurückgeben.
 
 ### Handler explizit registrieren

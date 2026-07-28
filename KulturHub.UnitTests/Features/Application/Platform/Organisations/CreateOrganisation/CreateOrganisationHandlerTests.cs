@@ -2,7 +2,9 @@ using ErrorOr;
 using FluentAssertions;
 using KulturHub.Application.Errors;
 using KulturHub.Application.Features.Platform.Organisations.CreateOrganisation;
+using KulturHub.Domain.ChangeLogs;
 using KulturHub.Domain.Organisations;
+using KulturHub.Domain.Users;
 using KulturHub.Infrastructure.Persistence;
 using KulturHub.UnitTests.TestHelpers;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +35,7 @@ public class CreateOrganisationHandlerTests
     private static CreateOrganisationCommand ValidCommand() => new(UserId, "Kulturverein Rügen");
 
     [Fact]
-    public async Task Handle_WhenRequestIsValid_ShouldCreateOrganisationAndMembership()
+    public async Task Handle_WhenRequestIsValid_ShouldCreateOrganisationAndMembershipAndChangeLog()
     {
         var (sut, db) = CreateSut([]);
 
@@ -45,11 +47,21 @@ public class CreateOrganisationHandlerTests
 
         db.Organisations.Count().Should().Be(1);
         db.Memberships.Count().Should().Be(1);
+        db.ChangeLogs.Count().Should().Be(1);
 
         var membership = db.Memberships.Single();
         membership.UserId.Value.Should().Be(UserId);
         membership.OrganisationId.Value.Should().Be(result.Value.Id);
         membership.JoinedAt.Should().Be(NowUtc);
+
+        var changeLog = db.ChangeLogs.Single();
+        changeLog.Message.Should().Be("Organisation wurde erstellt");
+        changeLog.OrganisationId.Value.Should().Be(result.Value.Id);
+        changeLog.CreatedBy.Value.Should().Be(UserId);
+        changeLog.CreatedAt.Should().Be(NowUtc);
+        changeLog.IsDeleted.Should().BeFalse();
+        changeLog.Data.Should().ContainKey("name");
+        changeLog.Data["name"].Should().Be("Kulturverein Rügen");
     }
 
     [Fact]
@@ -63,6 +75,7 @@ public class CreateOrganisationHandlerTests
         result.FirstError.Code.Should().Be("Organisation.NameRequired");
         db.Organisations.Count().Should().Be(0);
         db.Memberships.Count().Should().Be(0);
+        db.ChangeLogs.Count().Should().Be(0);
     }
 
     [Fact]
@@ -77,6 +90,7 @@ public class CreateOrganisationHandlerTests
         result.FirstError.Code.Should().Be("Organisation.NameTooLong");
         db.Organisations.Count().Should().Be(0);
         db.Memberships.Count().Should().Be(0);
+        db.ChangeLogs.Count().Should().Be(0);
     }
 
     [Fact]
@@ -92,10 +106,11 @@ public class CreateOrganisationHandlerTests
         result.FirstError.Code.Should().Be("Organisation.NameAlreadyExists");
         db.Organisations.Count().Should().Be(1);
         db.Memberships.Count().Should().Be(0);
+        db.ChangeLogs.Count().Should().Be(0);
     }
 
     [Fact]
-    public async Task Handle_WhenNameBelongsToSoftDeletedOrganisation_ShouldCreateNewOrganisation()
+    public async Task Handle_WhenNameBelongsToSoftDeletedOrganisation_ShouldCreateNewOrganisationAndChangeLog()
     {
         var softDeleted = Organisation.Create("Kulturverein Rügen", new FakeTimeProvider(NowUtc)).Value;
         var (sut, db) = CreateSut([softDeleted]);
@@ -109,6 +124,7 @@ public class CreateOrganisationHandlerTests
         db.Organisations.Count().Should().Be(1);
         db.Organisations.IgnoreQueryFilters().Count().Should().Be(2);
         db.Memberships.Count().Should().Be(1);
+        db.ChangeLogs.Count().Should().Be(1);
     }
 
     [Fact]
@@ -120,5 +136,8 @@ public class CreateOrganisationHandlerTests
 
         result.IsError.Should().BeFalse();
         result.Value.Name.Should().Be("Kulturverein Rügen");
+        var changeLog = db.ChangeLogs.Single();
+        changeLog.Data.Should().ContainKey("name");
+        changeLog.Data["name"].Should().Be("Kulturverein Rügen");
     }
 }
