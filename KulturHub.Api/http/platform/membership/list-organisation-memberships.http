@@ -1,5 +1,3 @@
 ### List memberships of an organisation
-@organisationId=c473df4a-affa-47e6-87b2-70e51b9ea01b
-
 GET {{baseUrl}}/organisations/{{organisationId}}/memberships
 Authorization: Bearer {{token}}

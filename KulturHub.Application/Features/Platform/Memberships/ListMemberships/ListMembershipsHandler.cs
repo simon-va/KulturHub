@@ -27,7 +27,8 @@ public sealed class ListMembershipsHandler(
                     m.UserId.Value,
                     FullName: $"{u.FirstName} {u.LastName}",
                     u.Email,
-                    m.JoinedAt))
+                    m.JoinedAt,
+                    m.Status))
             .ToListAsync(cancellationToken);
 
         logger.LogInformation(

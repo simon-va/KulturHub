@@ -53,6 +53,7 @@ public class CreateOrganisationHandlerTests
         membership.UserId.Value.Should().Be(UserId);
         membership.OrganisationId.Value.Should().Be(result.Value.Id);
         membership.JoinedAt.Should().Be(NowUtc);
+        membership.Status.Should().Be(KulturHub.Domain.Memberships.MembershipStatus.Accepted);
 
         var changeLog = db.ChangeLogs.Single();
         changeLog.Message.Should().Be("Organisation wurde erstellt");

@@ -1,6 +1,4 @@
 ### Update an existing organisation
-@organisationId=c473df4a-affa-47e6-87b2-70e51b9ea01b
-
 PUT {{baseUrl}}/organisations/{{organisationId}}
 Content-Type: application/json
 Authorization: Bearer {{token}}

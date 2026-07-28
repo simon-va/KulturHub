@@ -62,7 +62,8 @@ public class ListMembershipsHandlerTests
         result.IsError.Should().BeFalse();
         result.Value.Should().HaveCount(3);
         result.Value.Select(m => m.FullName)
-            .Should().ContainInOrder("Alice Anders", "Bob Brown", "Charlie Cook");
+            .Should().BeEquivalentTo(new[] { "Alice Anders", "Bob Brown", "Charlie Cook" });
+        result.Value.Should().OnlyContain(m => m.Status == MembershipStatus.Pending);
     }
 
     [Fact]

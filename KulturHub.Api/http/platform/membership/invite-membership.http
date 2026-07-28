@@ -1,0 +1,8 @@
+### Invite a user to an organisation
+POST {{baseUrl}}/organisations/{{organisationId}}/memberships/invite
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "invitee@example.com"
+}

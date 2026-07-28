@@ -11,12 +11,14 @@ public sealed class Membership
         UserId userId,
         OrganisationId organisationId,
         DateTime joinedAt,
+        MembershipStatus status,
         bool isDeleted)
     {
         Id = id;
         UserId = userId;
         OrganisationId = organisationId;
         JoinedAt = joinedAt;
+        Status = status;
         IsDeleted = isDeleted;
     }
 
@@ -24,11 +26,29 @@ public sealed class Membership
     public UserId UserId { get; }
     public OrganisationId OrganisationId { get; }
     public DateTime JoinedAt { get; }
+    public MembershipStatus Status { get; private set; }
     public bool IsDeleted { get; private set; }
 
     public static ErrorOr<Membership> Create(
         UserId userId,
         OrganisationId organisationId,
+        TimeProvider clock)
+    {
+        return CreateInternal(userId, organisationId, MembershipStatus.Pending, clock);
+    }
+
+    public static ErrorOr<Membership> CreateAccepted(
+        UserId userId,
+        OrganisationId organisationId,
+        TimeProvider clock)
+    {
+        return CreateInternal(userId, organisationId, MembershipStatus.Accepted, clock);
+    }
+
+    private static ErrorOr<Membership> CreateInternal(
+        UserId userId,
+        OrganisationId organisationId,
+        MembershipStatus status,
         TimeProvider clock)
     {
         var joinedAt = clock.GetUtcNow().UtcDateTime;
@@ -40,6 +60,7 @@ public sealed class Membership
             userId,
             organisationId,
             joinedAt,
+            status,
             isDeleted: false);
     }
 }

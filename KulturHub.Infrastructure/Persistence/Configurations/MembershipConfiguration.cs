@@ -32,6 +32,12 @@ public sealed class MembershipConfiguration : IEntityTypeConfiguration<Membershi
             .HasColumnName("joined_at")
             .IsRequired();
 
+        builder.Property(x => x.Status)
+            .HasColumnName("status")
+            .HasConversion<int>()
+            .HasDefaultValue(MembershipStatus.Pending)
+            .IsRequired();
+
         builder.Property(x => x.IsDeleted)
             .HasColumnName("is_deleted")
             .HasDefaultValue(false)
@@ -39,6 +45,7 @@ public sealed class MembershipConfiguration : IEntityTypeConfiguration<Membershi
 
         builder.HasIndex(x => x.UserId);
         builder.HasIndex(x => x.OrganisationId);
+        builder.HasIndex(x => new { x.UserId, x.OrganisationId });
 
         builder.HasQueryFilter(x => !x.IsDeleted);
     }

@@ -33,7 +33,7 @@ public sealed class CreateOrganisationHandler(
 
         var organisation = createResult.Value;
 
-        var membershipResult = Membership.Create(
+        var membershipResult = Membership.CreateAccepted(
             UserId.From(command.UserId),
             organisation.Id,
             clock);

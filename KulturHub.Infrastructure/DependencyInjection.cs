@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddSingleton<IInvitationCodeGenerator, InvitationCodeGeneratorAdapter>();
         services.AddScoped<IUserAdminReader, UserAdminReader>();
+        services.AddScoped<IUserReader, UserReader>();
         services.AddScoped<IMembershipReader, MembershipReader>();
 
         services.AddScoped<IAuthProvider, SupabaseAuthProvider>();
