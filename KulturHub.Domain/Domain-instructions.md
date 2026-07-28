@@ -85,6 +85,10 @@ public DateTime? DeletedAt { get; private set; }
 - Reaktivieren erfolgt analog über `Restore()`.
 - Das Filtern nach `IsDeleted` übernimmt EF Core per Global Query Filter
   im Infrastructure-Layer. Die Domain selbst kennt kein Filtern.
+- Application-Handler und Reader greifen ohne `IgnoreQueryFilters()` auf
+  aktive Datensätze zu. Wer soft-gelöschte Zeilen lesen muss
+  (Recovery, Admin-Reports, passende Tests), nutzt `IgnoreQueryFilters()`
+  explizit und begründet den Aufruf.
 
 **YAGNI-Hinweis:** `Delete(...)` und `Restore()` werden **erst dann**
 implementiert, wenn ein Endpoint sie auch tatsächlich aufruft. Aktuell

@@ -9,7 +9,6 @@ public sealed class UserReader(IAppDbContext db) : IUserReader
 {
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         db.Users
-            .IgnoreQueryFilters()
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 }

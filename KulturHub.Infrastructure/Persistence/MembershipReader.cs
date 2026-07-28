@@ -14,12 +14,10 @@ public sealed class MembershipReader(IAppDbContext db) : IMembershipReader
         Guid organisationId,
         CancellationToken cancellationToken) =>
         db.Memberships
-            .IgnoreQueryFilters()
             .AsNoTracking()
             .AnyAsync(
                 m => m.UserId == UserId.From(userId)
                     && m.OrganisationId == OrganisationId.From(organisationId)
-                    && !m.IsDeleted
                     && m.Status == MembershipStatus.Accepted,
                 cancellationToken);
 }

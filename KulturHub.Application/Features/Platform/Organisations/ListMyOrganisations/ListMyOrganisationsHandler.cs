@@ -15,16 +15,13 @@ public sealed class ListMyOrganisationsHandler(
         CancellationToken cancellationToken)
     {
         var organisations = await db.Memberships
-            .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(m => m.UserId == UserId.From(userId) && !m.IsDeleted)
+            .Where(m => m.UserId == UserId.From(userId))
             .Join(
-                db.Organisations.IgnoreQueryFilters().AsNoTracking(),
+                db.Organisations.AsNoTracking(),
                 m => m.OrganisationId,
                 o => o.Id,
-                (m, o) => new { o.Id, o.Name, o.IsDeleted })
-            .Where(x => !x.IsDeleted)
-            .Select(x => new MyOrganisationResponse(x.Id.Value, x.Name))
+                (m, o) => new MyOrganisationResponse(o.Id.Value, o.Name))
             .ToListAsync(cancellationToken);
 
         logger.LogInformation(

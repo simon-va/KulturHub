@@ -26,12 +26,10 @@ public sealed class InviteMembershipHandler(
             return MembershipErrors.UserNotFoundByEmail;
 
         var membershipExists = await db.Memberships
-            .IgnoreQueryFilters()
             .AsNoTracking()
             .AnyAsync(
                 m => m.OrganisationId == OrganisationId.From(command.OrganisationId)
-                     && m.UserId == user.Id
-                     && !m.IsDeleted,
+                     && m.UserId == user.Id,
                 cancellationToken);
 
         if (membershipExists)

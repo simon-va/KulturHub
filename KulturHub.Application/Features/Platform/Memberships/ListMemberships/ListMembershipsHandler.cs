@@ -15,11 +15,10 @@ public sealed class ListMembershipsHandler(
         CancellationToken cancellationToken)
     {
         var memberships = await db.Memberships
-            .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(m => m.OrganisationId == OrganisationId.From(organisationId) && !m.IsDeleted)
+            .Where(m => m.OrganisationId == OrganisationId.From(organisationId))
             .Join(
-                db.Users.IgnoreQueryFilters().AsNoTracking(),
+                db.Users.AsNoTracking(),
                 m => m.UserId,
                 u => u.Id,
                 (m, u) => new MembershipResponse(

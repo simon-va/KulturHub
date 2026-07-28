@@ -20,9 +20,8 @@ public sealed class CreateOrganisationHandler(
         CancellationToken cancellationToken)
     {
         var nameAlreadyTaken = await db.Organisations
-            .IgnoreQueryFilters()
             .AsNoTracking()
-            .AnyAsync(o => o.Name == command.Name && !o.IsDeleted, cancellationToken);
+            .AnyAsync(o => o.Name == command.Name, cancellationToken);
 
         if (nameAlreadyTaken)
             return OrganisationErrors.NameAlreadyExists;

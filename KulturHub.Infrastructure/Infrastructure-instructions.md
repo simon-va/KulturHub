@@ -74,9 +74,14 @@ in der Domain-Entity wird **nicht** benötigt. EF Core hydratisiert
 
 - Jede Entity mit `IsDeleted` bekommt in der Konfiguration ein
   `HasQueryFilter(x => !x.IsDeleted)`.
-- **Wer soft-gelöschte Datensätze bewusst lesen muss** (z. B.
-  Admin-Reports, Recovery-Tools), nutzt `IgnoreQueryFilters()` und ist
-  explizit zu kennzeichnen.
+- **Default ist "aktive Datensätze".** Handler und Reader schreiben
+  Queries gegen den normalen `DbSet`/`IQueryable`. Wer `IsDeleted` im
+  `Where` zusätzlich prüft, dupliziert den Filter und sollte es lassen.
+- **`IgnoreQueryFilters()` ist die Ausnahme, nicht der Standard.** Sie
+  kommt nur zum Einsatz, wenn ein Pfad soft-gelöschte Datensätze
+  bewusst lesen muss (z. B. Admin-Reports, Recovery-Tools, Tests, die
+  genau diesen Zustand assertieren). Jeder Aufruf ist im Code-Review
+  explizit zu begründen.
 - Reaktivierungen (Restore) aktualisieren `IsDeleted` und `DeletedAt`
   direkt über den DbContext – der Query-Filter blendet sie ab dem
   nächsten `SaveChangesAsync` wieder korrekt aus.
@@ -84,6 +89,11 @@ in der Domain-Entity wird **nicht** benötigt. EF Core hydratisiert
   `Delete(...)` / `Restore()` — der Filter wird unabhängig davon
   konfiguriert, weil die DB-Tabelle `is_deleted` und `deleted_at`
   braucht.
+
+**Anti-Pattern:** `IgnoreQueryFilters()` in Kombination mit
+`&& !x.IsDeleted` im selben `Where`. Das hebt den Filter auf, um ihn
+anschließend manuell wiederzuholen — der Global Query Filter leistet
+dasselbe ohne diesen Umweg.
 
 ### Migrations
 

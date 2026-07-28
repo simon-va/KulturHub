@@ -22,10 +22,9 @@ public sealed class ChangeMembershipStatusHandler(
         var membershipId = MembershipId.From(command.MembershipId);
 
         var membership = await db.Memberships
-            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(m => m.Id == membershipId, cancellationToken);
 
-        if (membership is null || membership.IsDeleted)
+        if (membership is null)
             return MembershipErrors.NotFound;
 
         if (membership.UserId != UserId.From(command.CallerUserId))
@@ -45,7 +44,6 @@ public sealed class ChangeMembershipStatusHandler(
             return transitionResult.Errors;
 
         var user = await db.Users
-            .IgnoreQueryFilters()
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == membership.UserId, cancellationToken);
 

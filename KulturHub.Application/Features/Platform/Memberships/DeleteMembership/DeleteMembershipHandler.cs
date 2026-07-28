@@ -24,20 +24,17 @@ public sealed class DeleteMembershipHandler(
         var actorUserId = UserId.From(command.ActorUserId);
 
         var membership = await db.Memberships
-            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(m => m.Id == membershipId, cancellationToken);
 
-        if (membership is null || membership.IsDeleted)
+        if (membership is null)
             return MembershipErrors.NotFound;
 
         if (membership.OrganisationId != organisationId)
             return MembershipErrors.NotFound;
 
         var activeMemberCount = await db.Memberships
-            .IgnoreQueryFilters()
             .CountAsync(
                 m => m.OrganisationId == organisationId
-                    && !m.IsDeleted
                     && m.Status == MembershipStatus.Accepted,
                 cancellationToken);
 

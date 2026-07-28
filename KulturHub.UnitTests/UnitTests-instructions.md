@@ -177,8 +177,11 @@ synchron `SaveChanges()` und welche, die `SaveChangesAsync()` aufrufen.
   Aktion ist atomar.
 - Global Query Filter (`!IsDeleted`) wird auch in In-Memory-Tests
   angewandt – das ist erwünscht, weil es die Produktionslogik spiegelt.
-- Wenn `IgnoreQueryFilters()`-Pfade getestet werden, ist das im
-  Testnamen explizit zu kennzeichnen.
+- Tests, die soft-gelöschte Datensätze lesen müssen, nutzen
+  `IgnoreQueryFilters()` direkt am `DbSet`. Das ist die einzige
+  produktive Verwendung außerhalb von Admin/Recovery-Pfaden und
+  daher im Testcode ausdrücklich erlaubt. Wenn `IgnoreQueryFilters()`-
+  Pfade getestet werden, ist das im Testnamen explizit zu kennzeichnen.
 - In-Memory-Provider **kennt keine Unique-Constraints** — Tests, die
   den `DbUpdateException`-Retry-Pfad absichern, müssen gegen eine
   echte Postgres-Instanz laufen (Integrationstest, separate Suite).

@@ -21,21 +21,18 @@ public sealed class UpdateOrganisationHandler(
         CancellationToken cancellationToken)
     {
         var organisation = await db.Organisations
-            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(
                 o => o.Id == OrganisationId.From(organisationId),
                 cancellationToken);
 
-        if (organisation is null || organisation.IsDeleted)
+        if (organisation is null)
             return OrganisationErrors.NotFound;
 
         var nameTakenByOtherOrganisation = await db.Organisations
-            .IgnoreQueryFilters()
             .AsNoTracking()
             .AnyAsync(
                 o => o.Name == request.Name
-                    && o.Id != OrganisationId.From(organisationId)
-                    && !o.IsDeleted,
+                    && o.Id != OrganisationId.From(organisationId),
                 cancellationToken);
 
         if (nameTakenByOtherOrganisation)
