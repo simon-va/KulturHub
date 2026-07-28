@@ -5,6 +5,8 @@ using KulturHub.Application.Errors;
 using KulturHub.Application.Features.Public.Auth.SignUp;
 using KulturHub.Application.Ports;
 using KulturHub.Domain.Invitations;
+using KulturHub.Domain.Memberships;
+using KulturHub.Domain.Organisations;
 using KulturHub.Domain.Users;
 using KulturHub.Infrastructure.Persistence;
 using KulturHub.UnitTests.TestHelpers;
@@ -262,6 +264,8 @@ public class SignUpHandlerTests
     {
         public DbSet<Invitation> Invitations => inner.Invitations;
         public DbSet<User> Users => inner.Users;
+        public DbSet<Organisation> Organisations => inner.Organisations;
+        public DbSet<Membership> Memberships => inner.Memberships;
 
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
             throw new DbUpdateException("Simulated database failure.");

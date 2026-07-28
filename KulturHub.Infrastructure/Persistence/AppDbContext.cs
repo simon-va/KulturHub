@@ -1,5 +1,7 @@
 using KulturHub.Application.Abstractions.Persistence;
 using KulturHub.Domain.Invitations;
+using KulturHub.Domain.Memberships;
+using KulturHub.Domain.Organisations;
 using KulturHub.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +11,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     public DbSet<Invitation> Invitations => Set<Invitation>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<Organisation> Organisations => Set<Organisation>();
+    public DbSet<Membership> Memberships => Set<Membership>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,4 +1,6 @@
 using KulturHub.Domain.Invitations;
+using KulturHub.Domain.Memberships;
+using KulturHub.Domain.Organisations;
 using KulturHub.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +10,8 @@ public interface IAppDbContext
 {
     DbSet<Invitation> Invitations { get; }
     DbSet<User> Users { get; }
+    DbSet<Organisation> Organisations { get; }
+    DbSet<Membership> Memberships { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

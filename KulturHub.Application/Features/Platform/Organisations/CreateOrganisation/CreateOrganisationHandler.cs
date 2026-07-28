@@ -1,0 +1,58 @@
+using ErrorOr;
+using KulturHub.Application.Abstractions.Persistence;
+using KulturHub.Application.Errors;
+using KulturHub.Domain.Memberships;
+using KulturHub.Domain.Organisations;
+using KulturHub.Domain.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace KulturHub.Application.Features.Platform.Organisations.CreateOrganisation;
+
+public sealed class CreateOrganisationHandler(
+    IAppDbContext db,
+    TimeProvider clock,
+    ILogger<CreateOrganisationHandler> logger)
+{
+    public async Task<ErrorOr<CreateOrganisationResponse>> HandleAsync(
+        CreateOrganisationCommand command,
+        CancellationToken cancellationToken)
+    {
+        var trimmedName = command.Name.Trim();
+
+        var nameAlreadyTaken = await db.Organisations
+            .AsNoTracking()
+            .AnyAsync(o => o.Name == trimmedName && !o.IsDeleted, cancellationToken);
+
+        if (nameAlreadyTaken)
+            return OrganisationErrors.NameAlreadyExists;
+
+        var createResult = Organisation.Create(trimmedName, clock);
+        if (createResult.IsError)
+            return createResult.Errors;
+
+        var organisation = createResult.Value;
+
+        var membershipResult = Membership.Create(
+            UserId.From(command.UserId),
+            organisation.Id,
+            clock);
+
+        if (membershipResult.IsError)
+            return membershipResult.Errors;
+
+        db.Organisations.Add(organisation);
+        db.Memberships.Add(membershipResult.Value);
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation(
+            "Organisation created: {OrganisationId} by {UserId}",
+            organisation.Id.Value, command.UserId);
+
+        return new CreateOrganisationResponse(
+            organisation.Id.Value,
+            organisation.Name,
+            organisation.CreatedAt);
+    }
+}

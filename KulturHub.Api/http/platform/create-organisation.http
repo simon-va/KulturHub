@@ -1,0 +1,8 @@
+### Create a new organisation
+POST {{baseUrl}}/organisations
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Mein Kulturverein"
+}
