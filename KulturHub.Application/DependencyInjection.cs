@@ -2,6 +2,7 @@ using FluentValidation;
 using KulturHub.Application.Features.Admin.Invitations.CreateInvitation;
 using KulturHub.Application.Features.Platform.Auth.SignIn;
 using KulturHub.Application.Features.Public.Auth.SignUp;
+using KulturHub.Application.Features.Public.Auth.ValidateInvitation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KulturHub.Application;
@@ -14,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<CreateInvitationHandler>();
         services.AddScoped<SignInHandler>();
         services.AddScoped<SignUpHandler>();
+        services.AddScoped<ValidateInvitationHandler>();
 
         return services;
     }
