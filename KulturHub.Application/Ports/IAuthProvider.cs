@@ -8,4 +8,9 @@ public interface IAuthProvider
         string email,
         string password,
         CancellationToken cancellationToken = default);
+
+    Task<ErrorOr<AuthProviderSession>> SignInAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default);
 }

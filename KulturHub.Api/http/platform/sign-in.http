@@ -1,0 +1,8 @@
+### Sign in an existing user
+POST {{baseUrl}}/auth/signin
+Content-Type: application/json
+
+{
+  "email": "max@example.com",
+  "password": "Sicher123!"
+}

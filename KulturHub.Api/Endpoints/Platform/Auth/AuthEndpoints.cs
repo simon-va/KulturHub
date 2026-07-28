@@ -1,5 +1,6 @@
 using KulturHub.Api.Extensions;
 using KulturHub.Api.Filters;
+using KulturHub.Application.Features.Platform.Auth.SignIn;
 using KulturHub.Application.Features.Public.Auth.SignUp;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +13,24 @@ public static class AuthEndpoints
         var group = app.MapGroup("/auth")
             .WithTags("Auth")
             .WithGroupName("platform");
+
+        group.MapPost("/signin", async (
+            [FromBody] SignInRequest request,
+            [FromServices] SignInHandler handler,
+            CancellationToken ct) =>
+        {
+            var result = await handler.HandleAsync(request, ct);
+
+            return result.Match(
+                response => Results.Json(response, statusCode: StatusCodes.Status200OK),
+                errors => errors.ToResult());
+        })
+            .AddEndpointFilter<ValidationFilter<SignInRequest>>()
+            .Produces<SignInResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
+            .WithName("Auth_SignIn");
 
         group.MapPost("/signup", async (
             [FromBody] SignUpRequest request,
