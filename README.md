@@ -309,13 +309,7 @@ Erwartete Entwickler-URLs (siehe `KulturHub.Api/Properties/launchSettings.json`)
 - HTTP:    `http://localhost:5159`
 - HTTPS:   `https://localhost:7158`
 - Scalar:  `http://localhost:5159/scalar`
-- OpenAPI: `http://localhost:5159/openapi/public.json` · `/platform.json` · `/admin.json`
-
-Falls `dotnet` in der Shell nicht gefunden wird:
-
-```bash
-export PATH="$HOME/.dotnet:$PATH"
-```
+- OpenAPI:  `http://localhost:5159/openapi/public.json` · `/platform.json` · `/admin.json`
 
 ## 11. Tests
 
