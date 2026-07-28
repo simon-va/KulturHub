@@ -12,4 +12,7 @@ internal static class MembershipValidationErrors
 
     public static readonly Error MustBePending =
         Error.Validation("Membership.MustBePending", "Membership must be in status Pending to change its status.");
+
+    public static readonly Error DeletedAtMustBeUtc =
+        Error.Validation("Membership.DeletedAtMustBeUtc", "DeletedAt must be UTC.");
 }

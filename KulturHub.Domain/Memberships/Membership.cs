@@ -13,7 +13,8 @@ public sealed class Membership
         DateTime invitedAt,
         DateTime? decidedAt,
         MembershipStatus status,
-        bool isDeleted)
+        bool isDeleted,
+        DateTime? deletedAt)
     {
         Id = id;
         UserId = userId;
@@ -22,6 +23,7 @@ public sealed class Membership
         DecidedAt = decidedAt;
         Status = status;
         IsDeleted = isDeleted;
+        DeletedAt = deletedAt;
     }
 
     public MembershipId Id { get; }
@@ -31,6 +33,7 @@ public sealed class Membership
     public DateTime? DecidedAt { get; private set; }
     public MembershipStatus Status { get; private set; }
     public bool IsDeleted { get; private set; }
+    public DateTime? DeletedAt { get; private set; }
 
     public static ErrorOr<Membership> Create(
         UserId userId,
@@ -51,7 +54,8 @@ public sealed class Membership
             invitedAt: now,
             decidedAt,
             status,
-            isDeleted: false);
+            isDeleted: false,
+            deletedAt: null);
     }
 
     public ErrorOr<Success> Accept(TimeProvider clock)
@@ -79,6 +83,17 @@ public sealed class Membership
 
         Status = MembershipStatus.Rejected;
         DecidedAt = now;
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> Delete(TimeProvider clock)
+    {
+        var now = clock.GetUtcNow().UtcDateTime;
+        if (now.Kind != DateTimeKind.Utc)
+            return MembershipValidationErrors.DeletedAtMustBeUtc;
+
+        IsDeleted = true;
+        DeletedAt = now;
         return Result.Success;
     }
 }

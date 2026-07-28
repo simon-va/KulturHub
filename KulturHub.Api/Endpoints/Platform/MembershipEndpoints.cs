@@ -2,6 +2,7 @@ using System.Security.Claims;
 using KulturHub.Api.Extensions;
 using KulturHub.Api.Filters;
 using KulturHub.Application.Features.Platform.Memberships.ChangeMembershipStatus;
+using KulturHub.Application.Features.Platform.Memberships.DeleteMembership;
 using KulturHub.Application.Features.Platform.Memberships.InviteMembership;
 using KulturHub.Application.Features.Platform.Memberships.ListMemberships;
 using Microsoft.AspNetCore.Mvc;
@@ -92,6 +93,32 @@ public static class MembershipEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status500InternalServerError)
             .WithName("Memberships_ChangeStatus");
+
+        group.MapDelete("/{membershipId:guid}", async (
+            Guid organisationId,
+            Guid membershipId,
+            ClaimsPrincipal user,
+            [FromServices] DeleteMembershipHandler handler,
+            CancellationToken ct) =>
+        {
+            var command = new DeleteMembershipCommand(
+                membershipId,
+                user.GetUserId(),
+                organisationId);
+
+            var result = await handler.HandleAsync(command, ct);
+
+            return result.Match(
+                _ => Results.NoContent(),
+                errors => errors.ToResult());
+        })
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
+            .WithName("Memberships_Delete");
 
         return app;
     }

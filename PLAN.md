@@ -3,20 +3,25 @@
 Diese Datei dient zur besseren Planung von neuen Funktionen:
 
 ## User-Story
+
 Als Nutzer
-möchte ich den Status meiner Membership, die Pending ist, auf Accepted oder Rejected setzen
-um eine Antwort auf die Einladung zu geben
+möchte ich ein Membership löschen können
+um die Liste der berechtigten Personen aktuell zu halten
 
 ### Akzeptanzkriterien
-- Neuer POST Endpunkt: memberships/{membershipId}/status
-- Body: neuer Status (Accepted oder Rejected) – nur diese zwei Werte, eigenes Request-Enum
-- Endpunkt ist mit RequireAuth abgesichert + Self-Check (nur der eingeladene User selbst)
-- Statuswechsel nur von Pending → Accepted oder Pending → Rejected
-- Neues DB-Feld decided_at (nullable), gesetzt bei Accepted UND Rejected
-- Feld joined_at wird zu invited_at umbenannt (immer gesetzt, Zeitpunkt der Einladung)
-- ChangeLog wird erstellt
-- Membership.Create nimmt Status als Parameter; CreateAccepted entfällt; bei Founder InvitedAt == DecidedAt
-- Eigenes Enum MembershipChangeStatus (nur Accepted/Rejected) für den Request
-- Bestehende MembershipResponse/InviteMembershipResponse bekommen DecidedAt statt JoinedAt
-- Migration: invited_at neu + decided_at neu + joined_at entfernen, Backfill aus joined_at für Accepted
+
+- Neuer DELETE Endpunkt: memberships/{membershipId}
+- Endpunkt ist mit RequireAuth abgesichert
+- Löschen erlaubt, wenn Actor Mitglied der Organisation ist (Membership.Status == Accepted)
+- Membership darf gelöscht werden, sofern danach noch mindestens ein weiteres aktives Member übrig bleibt
+- Self-Delete (eigene Membership) immer erlaubt, sofern danach noch mindestens ein weiteres aktives Member übrig bleibt
+- Es darf nicht das letzte aktive Member der Organisation gelöscht werden (Org muss mindestens ein Member behalten) → 409 Conflict
+- Der Status der Membership ist egal
+- Idempotentes Verhalten: Zweiter DELETE auf dieselbe Membership gibt 404 zurück
+- Soft-Delete: Neues DB-Feld deleted_at (nullable)
+- ChangeLog wird erstellt (Delete-Event mit Actor + MembershipId + OrgId)
+- Membership.Delete nimmt Actor als Parameter und prüft Org-Mitgliedschaft + "letztes Member"-Constraint in einer Transaction
+- Bestehende Queries (GetMemberships, GetInvites etc.) filtern `deleted_at IS NULL` per globalem Query-Filter
+- Bestehende MembershipResponse/InviteMembershipResponse bleiben unverändert — DeletedAt ist eine interne Metrik und wird nicht nach außen gegeben
+- Migration: deleted_at neu (nullable) + Index auf (org_id, user_id, deleted_at)
 - Bestehende Tests, Handler, Configurations, Responses entsprechend anpassen

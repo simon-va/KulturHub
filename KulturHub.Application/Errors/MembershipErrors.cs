@@ -23,4 +23,8 @@ public static class MembershipErrors
     public static readonly Error Forbidden =
         Error.Forbidden("Membership.Forbidden",
             "You are not allowed to change the status of this membership.");
+
+    public static readonly Error LastActiveMember =
+        Error.Conflict("Membership.LastActiveMember",
+            "The last active member of an organisation cannot be removed.");
 }

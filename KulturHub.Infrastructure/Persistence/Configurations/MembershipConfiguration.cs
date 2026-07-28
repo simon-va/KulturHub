@@ -46,9 +46,13 @@ public sealed class MembershipConfiguration : IEntityTypeConfiguration<Membershi
             .HasDefaultValue(false)
             .IsRequired();
 
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
+
         builder.HasIndex(x => x.UserId);
         builder.HasIndex(x => x.OrganisationId);
         builder.HasIndex(x => new { x.UserId, x.OrganisationId });
+        builder.HasIndex(x => new { x.OrganisationId, x.UserId, x.IsDeleted });
 
         builder.HasQueryFilter(x => !x.IsDeleted);
     }

@@ -1,6 +1,7 @@
 using FluentValidation;
 using KulturHub.Application.Features.Admin.Invitations.CreateInvitation;
 using KulturHub.Application.Features.Platform.Auth.SignIn;
+using KulturHub.Application.Features.Platform.Memberships.DeleteMembership;
 using KulturHub.Application.Features.Platform.Organisations.CreateOrganisation;
 using KulturHub.Application.Features.Platform.Memberships.InviteMembership;
 using KulturHub.Application.Features.Platform.Memberships.ListMemberships;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ListMyOrganisationsHandler>();
         services.AddScoped<ListMembershipsHandler>();
         services.AddScoped<InviteMembershipHandler>();
+        services.AddScoped<DeleteMembershipHandler>();
 
         return services;
     }
