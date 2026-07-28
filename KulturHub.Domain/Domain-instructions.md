@@ -146,6 +146,47 @@ internal static class InvitationValidationErrors
 }
 ```
 
+## Validierungs-Schichten
+
+Validierung lebt in **zwei** Schichten, mit klarer Trennung.
+
+### Domain (`Create`-Factories)
+
+- Prüft **echte Invarianten**, die das Aggregat unabhängig vom Aufrufer
+  garantieren muss.
+- Beispiele: UTC für `CreatedAt`/`JoinedAt`, `ExpiresAt > CreatedAt`,
+  Format von intern erzeugten Codes, falls die Factory sie annimmt.
+- Antwort: `ErrorOr<T>` mit `Error.Validation(...)` aus der
+  `<Entity>ValidationErrors`-Klasse.
+
+### Application (`*RequestValidator`)
+
+- Prüft **Form & Shape** der eingehenden API-Requests.
+- Beispiele: `NotEmpty`, Längen (referenziert Domain-Konstanten),
+  Patterns.
+- Antwort: `ValidationResult` → 400 mit Property-Map im Endpoint-Filter.
+
+### Was nicht doppelt geprüft werden muss
+
+Shape-Checks (NotEmpty, Längen, Email-Format) **dürfen** sowohl im
+Validator als auch in der Domain-Factory stehen — als
+**Defense-in-Depth**, damit die Factory auch dann korrekt arbeitet,
+wenn sie aus Tests oder interner Logik direkt aufgerufen wird. In
+diesem Fall gilt:
+
+- **Konstante im Domain, Referenz im Validator.** Keine Magic-Numbers.
+- Domain-Check prüft denselben Wert, den der Validator bereits
+  durchgesetzt hat. Wer eine Regel ändert, ändert sie an genau einer
+  Stelle.
+
+### Was nur in eine Schicht gehört
+
+| Regel | Domain | Validator |
+|---|---|---|
+| Aggregat-Invariante (UTC, `ExpiresAt > CreatedAt`) | ✅ | ❌ (Daten kommen vom Server) |
+| Eindeutigkeit gegen DB | ❌ (Handler) | ❌ (Handler) |
+| Shape des Requests (Email-Format, Längen) | optional | ✅ |
+
 ## Was hier **nicht** hineingehört
 
 - Keine Repository-Interfaces

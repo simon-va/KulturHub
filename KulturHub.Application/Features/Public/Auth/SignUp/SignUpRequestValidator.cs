@@ -1,11 +1,10 @@
 using FluentValidation;
+using KulturHub.Domain.Invitations;
 
 namespace KulturHub.Application.Features.Public.Auth.SignUp;
 
 public sealed class SignUpRequestValidator : AbstractValidator<SignUpRequest>
 {
-    private const string InvitationCodePattern = @"^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}$";
-
     public SignUpRequestValidator()
     {
         RuleFor(x => x.Email)
@@ -28,7 +27,7 @@ public sealed class SignUpRequestValidator : AbstractValidator<SignUpRequest>
 
         RuleFor(x => x.InvitationCode)
             .NotEmpty()
-            .Matches(InvitationCodePattern)
+            .Matches(InvitationCodeSpecs.Pattern)
             .WithMessage("Invitation code must match the format 'XXX-XXX' using A-Z (without I and O) and 2-9.");
     }
 }

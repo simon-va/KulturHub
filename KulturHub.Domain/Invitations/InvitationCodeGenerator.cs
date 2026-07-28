@@ -9,7 +9,7 @@ public static class InvitationCodeGenerator
     private const int GroupLength = 3;
 
     private static readonly Regex FormatRegex = new(
-        $"^[A-HJ-NP-Z2-9]{{{GroupLength}}}-[A-HJ-NP-Z2-9]{{{GroupLength}}}$",
+        InvitationCodeSpecs.Pattern,
         RegexOptions.Compiled);
 
     public static string Generate()

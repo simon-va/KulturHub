@@ -15,6 +15,22 @@ Enthält:
 - Mapping von `ErrorOr<T>`-Ergebnissen auf HTTP-Antworten
 - Querschnittsthemen: Logging, CORS, JSON, Exception Handling
 
+## Validierung — was hier passiert (und was nicht)
+
+Diese Schicht ist **nicht** für fachliche Korrektheit zuständig. Sie ist
+die **Eingangsvalidierung** für ankommende API-Requests.
+
+- **Hier:** Form, Shape, Pattern, Längen, Pflichtfelder. Ausgeführt im
+  `ValidationFilter<TRequest>` per FluentValidation. Antwort: 400 mit
+  Property-bezogener Fehlerliste (`Results.ValidationProblem(...)`).
+- **Nicht hier:** fachliche Regeln, die System-Zustand brauchen
+  (Eindeutigkeit, Existenz, Berechtigung), Domain-Invarianten,
+  Authentifizierung.
+
+Die Trennung im Detail ist in den Layer-Instructions beschrieben:
+- [`KulturHub.Application/Application-instructions.md`](../Application/Application-instructions.md) → „Validierung"
+- [`KulturHub.Domain/Domain-instructions.md`](../Domain/Domain-instructions.md) → „Validierungs-Schichten"
+
 ## Verschmelzung
 
 - **Application-Handler werden direkt aufgerufen** – keine weitere

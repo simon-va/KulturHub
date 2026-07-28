@@ -251,6 +251,32 @@ public interface IInvitationCodeGenerator
 - Die API ruft `IValidator<T>.ValidateAsync(request)` im Endpoint-Filter
   auf; nur dann wird die Pipeline aufgerufen, wenn `IsValid`.
 
+### Schichten-Vertrag: was in den Validator gehört
+
+Validatoren prüfen **Form & Shape**, nicht Fachlichkeit.
+
+**Gehört in den Validator:**
+
+| Was | Beispiel |
+|---|---|
+| `NotEmpty`, `EmailAddress`, `Matches(pattern)` | `RuleFor(x => x.Email).NotEmpty().EmailAddress()` |
+| `MinimumLength`, `MaximumLength` | Bezug auf Domain-Konstanten, z. B. `Organisation.MaxNameLength` |
+| Format von IDs/Codes, die der Client kennen muss | Invitation-Code-Pattern (`InvitationCodeSpecs.Pattern`) |
+| Strukturelle Konsistenz | `EndDate > StartDate`, falls beide Felder im Request sind |
+
+**Gehört nicht in den Validator:**
+
+- Eindeutigkeit gegen die Datenbank → Handler.
+- Existenz/Status von Aggregaten → Handler.
+- Domänen-Invarianten (UTC-Zeit, `ExpiresAt > CreatedAt`) → Domain.
+- Authentifizierungs-/Autorisierungs-Checks → Filter / `RequireAuthorization()`.
+
+**Konstanten-Quelle:** Pattern und Längen werden aus dem Domain-Layer
+referenziert (z. B. `Organisation.MaxNameLength`,
+`InvitationCodeSpecs.Pattern`), nicht als Magic-Numbers dupliziert.
+Validator und Domain-Factory prüfen denselben Wert — wer eine Regel
+ändert, ändert sie an genau einer Stelle.
+
 ## Logging
 
 - **Strukturiertes Logging** via `ILogger<T>`. Keine `Console.WriteLine`.

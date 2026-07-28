@@ -1,4 +1,5 @@
 using FluentValidation;
+using KulturHub.Domain.Organisations;
 
 namespace KulturHub.Application.Features.Platform.Organisations.CreateOrganisation;
 
@@ -8,6 +9,6 @@ public sealed class CreateOrganisationRequestValidator : AbstractValidator<Creat
     {
         RuleFor(x => x.Name)
             .NotEmpty()
-            .MaximumLength(200);
+            .MaximumLength(Organisation.MaxNameLength);
     }
 }
