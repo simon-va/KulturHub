@@ -54,7 +54,9 @@ KulturHub.Application/
 │   └── InvitationErrors.cs
 ├── Ports/                             # externe Systeme + testbare Helfer
 │   ├── IAuthProvider.cs
-│   └── IInvitationCodeGenerator.cs
+│   ├── IInvitationCodeGenerator.cs
+│   ├── IUserAdminClient.cs
+│   └── IUserAdminReader.cs
 └── Features/
     └── <Bereich>/                     # Public / Platform / Admin
         └── <UseCase>/

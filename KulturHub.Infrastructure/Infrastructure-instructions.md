@@ -185,8 +185,9 @@ Wichtige Stolperfallen:
   Domain-Helfer bekommen konkrete Implementierungen unter
   - `KulturHub.Infrastructure/<Subsystem>/` für externe Systeme
     (z. B. `Auth/`)
-  - `KulturHub.Infrastructure/<BoundedContext>/` für Domain-Helfer
-    (z. B. `Invitations/InvitationCodeGeneratorAdapter.cs`)
+  - `KulturHub.Infrastructure/<BoundedContext>/` für Domain-Helfer und
+    DB-Reader auf Aggregate (z. B. `Invitations/InvitationCodeGeneratorAdapter.cs`,
+    `Users/UserAdminReader.cs`)
 - Implementierungen registrieren sich selbst in `DependencyInjection.cs`
   unter `AddInfrastructure(...)`.
 

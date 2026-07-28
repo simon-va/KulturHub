@@ -3,6 +3,7 @@ using KulturHub.Application.Ports;
 using KulturHub.Infrastructure.Auth;
 using KulturHub.Infrastructure.Invitations;
 using KulturHub.Infrastructure.Persistence;
+using KulturHub.Infrastructure.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +25,7 @@ public static class DependencyInjection
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddSingleton<IInvitationCodeGenerator, InvitationCodeGeneratorAdapter>();
+        services.AddScoped<IUserAdminReader, UserAdminReader>();
 
         services.AddScoped<IAuthProvider, SupabaseAuthProvider>();
         services.AddHttpClient<IUserAdminClient, SupabaseUserAdminClient>();

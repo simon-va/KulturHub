@@ -1,14 +1,21 @@
-/*
-public sealed class AdminAuthorizationFilter(IUserRepository authRepository) : IEndpointFilter
+using KulturHub.Api.Extensions;
+using KulturHub.Application.Ports;
+
+namespace KulturHub.Api.Filters;
+
+public sealed class AdminAuthorizationFilter(IUserAdminReader userAdminReader) : IEndpointFilter
 {
-    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    public async ValueTask<object?> InvokeAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next)
     {
         var user = context.HttpContext.User;
         if (user.Identity?.IsAuthenticated != true)
             return Results.Unauthorized();
 
         var userId = user.GetUserId();
-        var isAdmin = await authRepository.IsAdminAsync(userId, context.HttpContext.RequestAborted);
+        var isAdmin = await userAdminReader.IsAdminAsync(
+            userId, context.HttpContext.RequestAborted);
 
         if (!isAdmin)
             return Results.Problem(
@@ -19,4 +26,3 @@ public sealed class AdminAuthorizationFilter(IUserRepository authRepository) : I
         return await next(context);
     }
 }
-*/

@@ -237,13 +237,19 @@ durch die `.ProducesProblem(...)`-Aufrufe im Endpoint auf.
 ## Filters (Mechanismus)
 
 - Unter `KulturHub.Api/Filters/` liegen Endpoint-Filter (z. B.
-  `AdminAuthorizationFilter`, `MembershipAuthorizationFilter`).
+  `AdminAuthorizationFilter`, `MembershipAuthorizationFilter`,
+  `ValidationFilter<TRequest>`).
 - Sie werden in der Endpoint-Pipeline per
   `.AddEndpointFilter<TFilter>()` eingehängt.
-- Der Mechanismus ist vorhanden und getestet; die konkreten
-  Filter-Implementierungen werden **reaktiviert**, wenn die
-  Auth-User-Story umgesetzt wird. Aktuell reichen
-  `.RequireAuthorization()` und die Validierungs-Filter aus.
+- Der bevorzugte Einsatzort ist die `MapGroup(...)` der jeweiligen
+  Ressource — so erbt jeder Endpoint dieser Ressource den Filter
+  automatisch.
+- **Reihenfolge:** `.RequireAuthorization()` zuerst (erzwingt gültigen
+  JWT und antwortet mit 401 ohne Body), danach
+  `.AddEndpointFilter<AdminAuthorizationFilter>()` (DB-Lookup via
+  `IUserAdminReader` und 403 bei fehlender Admin-Rolle). So lehnt die
+  JWT-Pipeline bereits nicht authentifizierte Requests ab, bevor der
+  Filter überhaupt einen DB-Roundtrip macht.
 
 ## Auth
 

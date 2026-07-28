@@ -1,4 +1,5 @@
 using KulturHub.Api.Extensions;
+using KulturHub.Api.Filters;
 using KulturHub.Application.Features.Admin.Invitations.CreateInvitation;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +11,9 @@ public static class InvitationEndpoints
     {
         var group = app.MapGroup("/admin/invitations")
             .WithTags("Invitations")
-            .WithGroupName("admin");
+            .WithGroupName("admin")
+            .RequireAuthorization()
+            .AddEndpointFilter<AdminAuthorizationFilter>();
 
         group.MapPost("/", async ([FromServices] CreateInvitationHandler handler, CancellationToken ct) =>
         {
@@ -21,6 +24,8 @@ public static class InvitationEndpoints
                 errors => errors.ToResult());
         })
             .Produces<CreateInvitationResponse>(StatusCodes.Status201Created)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
             .WithName("Invitations_Create");
 
         return app;
