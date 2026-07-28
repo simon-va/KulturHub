@@ -7,7 +7,8 @@ Infrastructure enthält alles Technische.
 - **EF Core** – `AppDbContext`, DbSets, Konfigurationen
 - **Migrations** – versionierte Datenbank-Migrationen
 - **Implementierungen der Ports** aus dem Application-Layer für externe
-  Systeme (z. B. `SupabaseAuthProvider`, künftig `EmailSender`)
+  Systeme (z. B. `SupabaseAuthProvider`, künftig `EmailSender`) und
+  für testbare Domain-Helfer (z. B. `InvitationCodeGeneratorAdapter`)
 - **Auth-Integration** – Supabase-Client, JWT-Discovery-Konfiguration
 
 ## EF Core
@@ -23,8 +24,9 @@ Infrastructure enthält alles Technische.
   auf, damit alle `IEntityTypeConfiguration<T>`-Klassen automatisch
   greifen.
 - Wird per `IAppDbContext`-Interface an den Application-Layer
-  weitergereicht (das Interface wird im Application-Layer definiert und
-  vom DbContext implementiert).
+  weitergereicht. Das Interface wird im Application-Layer definiert
+  (`KulturHub.Application/Abstractions/Persistence/IAppDbContext`) und
+  vom DbContext implementiert.
 - `IAppDbContext` enthält:
   - die relevanten `DbSet<T>`-Properties
   - `Task<int> SaveChangesAsync(CancellationToken)`
@@ -38,29 +40,35 @@ Infrastructure enthält alles Technische.
 - Beispiel:
 
 ```csharp
-public sealed class OrganisationConfiguration
-    : IEntityTypeConfiguration<Organisation>
+public sealed class InvitationConfiguration
+    : IEntityTypeConfiguration<Invitation>
 {
-    public void Configure(EntityTypeBuilder<Organisation> builder)
+    public void Configure(EntityTypeBuilder<Invitation> builder)
     {
-        builder.ToTable("organisations");
+        builder.ToTable("invitation_codes");
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.Id)
             .HasColumnName("id")
-            .HasConversion(id => id.Value, v => new OrganisationId(v));
+            .HasConversion(id => id.Value, v => new InvitationId(v));
 
-        builder.Property(x => x.Name)
-            .HasColumnName("name")
-            .HasMaxLength(200)
+        builder.Property(x => x.Code)
+            .HasColumnName("code")
+            .HasMaxLength(7)
             .IsRequired();
 
         // ...
 
+        builder.HasIndex(x => x.Code).IsUnique();
         builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }
 ```
+
+**Wichtig:** `HasConversion(id => id.Value, v => new InvitationId(v))`
+für strongly-typed IDs ist ausreichend — ein `Reconstitute(...)`-Pfad
+in der Domain-Entity wird **nicht** benötigt. EF Core hydratisiert
+über die Property-Konvertierung und den privaten Konstruktor.
 
 ### Global Query Filter für Soft Delete
 
@@ -72,33 +80,76 @@ public sealed class OrganisationConfiguration
 - Reaktivierungen (Restore) aktualisieren `IsDeleted` und `DeletedAt`
   direkt über den DbContext – der Query-Filter blendet sie ab dem
   nächsten `SaveChangesAsync` wieder korrekt aus.
+- Der Filter hängt **nicht** an der Existenz von Domain-Methoden
+  `Delete(...)` / `Restore()` — der Filter wird unabhängig davon
+  konfiguriert, weil die DB-Tabelle `is_deleted` und `deleted_at`
+  braucht.
 
 ### Migrations
 
 - Migrations-Dateien werden vom `dotnet-ef`-Tool generiert und liegen
   unter `KulturHub.Infrastructure/Persistence/Migrations/`.
 - Benennung: `<Zeitstempel>_<Name>.cs` (EF-Standard).
-- Neue Migration anlegen:
+- **Namespace**: `KulturHub.Infrastructure.Persistence.Migrations`.
 
-```bash
-dotnet ef migrations add <Name> \
-  --project KulturHub.Infrastructure \
-  --startup-project KulturHub.Api
-```
+Wichtige Stolperfallen:
 
-- Datenbank aktualisieren:
+1. **`dotnet ef` als net8.0-Tool auf macOS mit nur .NET-10-SDK**
+   - Symptom: „You must install .NET to run this application."
+   - Ursache: Das globale Tool wird unter
+     `~/.dotnet/tools/.store/dotnet-ef/<v>/dotnet-ef/<v>/tools/net8.0/`
+     ausgeliefert, kann aber das 10er-SDK nicht finden.
+   - Lösung: `DOTNET_ROOT="$HOME/.dotnet"` setzen, bevor der Befehl
+     läuft. Idealerweise dauerhaft in `~/.zshenv` oder `~/.zprofile`.
 
-```bash
-dotnet ef database update \
-  --project KulturHub.Infrastructure \
-  --startup-project KulturHub.Api
-```
+2. **`DesignTimeDbContextFactory` muss User Secrets des API-Projekts lesen**
+   - `dotnet ef ... --startup-project KulturHub.Api` lädt die Secrets
+     von `KulturHub.Api` nur, wenn die Factory sie anfordert.
+   - Muster:
 
-- Der `db/`-Ordner im Solution-Root entfällt. Schema-Stand ist immer
-  die letzte angewandte Migration.
-- **`DesignTimeDbContextFactory`** liegt ebenfalls im Persistence-Ordner,
-  damit `dotnet ef` ohne geladene `Program.cs` einen DbContext bauen
-  kann.
+     ```csharp
+     public AppDbContext CreateDbContext(string[] args)
+     {
+         var configuration = new ConfigurationBuilder()
+             .AddEnvironmentVariables()
+             .AddUserSecrets("6e624591-7875-4f6e-bc3c-95870bfbcfa3")
+             .Build();
+         var connectionString = configuration.GetConnectionString("Default")
+             ?? throw new InvalidOperationException("...");
+         // ...
+     }
+     ```
+   - Die UserSecretsId ist die aus `KulturHub.Api.csproj`
+     (`<PropertyGroup><UserSecretsId>...`). Sie muss als Konstante in
+     der Factory hinterlegt sein — der Factory steht kein DI-Container
+     zur Verfügung.
+
+3. **Migrationen landen im falschen Verzeichnis**
+   - `dotnet ef migrations add` schreibt sie nach
+     `KulturHub.Infrastructure/Migrations/`, nicht nach
+     `KulturHub.Infrastructure/Persistence/Migrations/`.
+   - Nach dem Generieren: Verzeichnis verschieben und die
+     `namespace`-Zeilen in den generierten Dateien auf
+     `KulturHub.Infrastructure.Persistence.Migrations` anpassen.
+
+4. **Startup-Projekt für `dotnet ef`**
+   - `--startup-project KulturHub.Infrastructure` schlägt fehl, weil
+     `KulturHub.Infrastructure` keine User Secrets kennt und nicht das
+     Composition-Root-Projekt ist.
+   - **Immer** `--startup-project KulturHub.Api` verwenden.
+
+5. **Tooling in der API**
+   - `KulturHub.Api` braucht das Paket
+     `Microsoft.EntityFrameworkCore.Design` (mit `PrivateAssets=all`,
+     `IncludeAssets` wie üblich), sonst meldet `dotnet ef`
+     „Your startup project doesn't reference Microsoft.EntityFrameworkCore.Design".
+
+6. **`appsettings.json` ConnectionString bleibt leer**
+   - Auch wenn die User Secrets die echte ConnectionString enthalten,
+     steht in `appsettings.json` weiterhin `ConnectionStrings:Default = ""`.
+     Das ist Absicht — echte Credentials gehören nicht in den Git-Tree.
+   - `IConfiguration.GetConnectionString("Default")` durchsucht
+     automatisch mehrere Provider und findet den Wert in den Secrets.
 
 ### Spaltennamen
 
@@ -109,7 +160,7 @@ dotnet ef database update \
 
 ### Konventionen
 
-- Primary Keys heißen in der DB `id` (nicht `organisation_id`).
+- Primary Keys heißen in der DB `id` (nicht `entity_id`).
 - Foreign Keys heißen `<referenzierte_entity>_id`
   (`owner_user_id`, `organisation_id`).
 - Zeitstempel heißen `created_at`, `updated_at`, `deleted_at`.
@@ -130,11 +181,32 @@ dotnet ef database update \
 
 ## Ports-Implementierungen
 
-- Externe Systeme (E-Mail, Social Media, künftige APIs) bekommen
-  konkrete Implementierungen unter
-  `KulturHub.Infrastructure/<Subsystem>/`.
+- Externe Systeme (E-Mail, Social Media, künftige APIs) und testbare
+  Domain-Helfer bekommen konkrete Implementierungen unter
+  - `KulturHub.Infrastructure/<Subsystem>/` für externe Systeme
+    (z. B. `Auth/`)
+  - `KulturHub.Infrastructure/<BoundedContext>/` für Domain-Helfer
+    (z. B. `Invitations/InvitationCodeGeneratorAdapter.cs`)
 - Implementierungen registrieren sich selbst in `DependencyInjection.cs`
   unter `AddInfrastructure(...)`.
+
+### Beispiel: `IInvitationCodeGenerator`
+
+```csharp
+// KulturHub.Infrastructure/Invitations/InvitationCodeGeneratorAdapter.cs
+public sealed class InvitationCodeGeneratorAdapter : IInvitationCodeGenerator
+{
+    public string Generate() => InvitationCodeGenerator.Generate();
+}
+```
+
+```csharp
+// KulturHub.Infrastructure/DependencyInjection.cs
+services.AddSingleton<IInvitationCodeGenerator, InvitationCodeGeneratorAdapter>();
+```
+
+Die Implementierung ist zustandslos und thread-safe — Singleton ist
+bewusst gewählt.
 
 ## Logging
 
@@ -142,8 +214,12 @@ dotnet ef database update \
 - Strukturierte Properties statt interpolierter Strings:
 
 ```csharp
-_logger.LogInformation("Organisation erstellt: {OrganisationId}", id.Value);
+_logger.LogInformation("Invitation erstellt: {InvitationId}", id.Value);
 ```
+
+- Default-Provider (Console, Debug, EventSource) werden in `Program.cs`
+  via `WebApplication.CreateBuilder` aktiviert. Andere Senken (Serilog,
+  OTel) ergänzen `Program.cs`, nicht die Handler.
 
 ## Was hier **nicht** hineingehört
 
@@ -151,3 +227,7 @@ _logger.LogInformation("Organisation erstellt: {OrganisationId}", id.Value);
 - Keine Request-/Response-DTOs (leben im Application-Layer)
 - Keine Use-Case-Handler
 - Keine Validatoren
+- Keine `IAppDbContext`-Definition (lebt zentral in der Application-Schicht)
+- Keine doppelten `<Entity>Errors`-Klassen — Domain hat
+  `<Entity>ValidationErrors`, Application hat `<Entity>Errors` /
+  `<BoundedContext>Errors`

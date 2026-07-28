@@ -1,6 +1,10 @@
+using KulturHub.Application.Abstractions.Persistence;
+using KulturHub.Application.Ports;
+using KulturHub.Infrastructure.Invitations;
+using KulturHub.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace KulturHub.Infrastructure;
 
@@ -10,26 +14,16 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // services.Configure<SupabaseAuthOptions>(configuration.GetSection(SupabaseAuthOptions.SectionName));
-        // services.AddSingleton<IConfigureOptions<SupabaseAuthOptions>, ConfigureSupabaseAuthOptions>();
+        var connectionString = configuration.GetConnectionString("Default")
+            ?? throw new InvalidOperationException(
+                "ConnectionStrings:Default is not configured.");
 
-        // services.AddSingleton(sp =>
-        // {
-        //     var options = sp.GetRequiredService<IOptions<SupabaseAuthOptions>>().Value;
-        //     return new Supabase.Client(options.Url, options.Key);
-        // });
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(connectionString));
+
+        services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddSingleton<IInvitationCodeGenerator, InvitationCodeGeneratorAdapter>();
 
         return services;
     }
-
-    // private sealed class ConfigureSupabaseAuthOptions(IConfiguration configuration) : IConfigureOptions<SupabaseAuthOptions>
-    // {
-    //     public void Configure(SupabaseAuthOptions options)
-    //     {
-    //         var section = configuration.GetSection(SupabaseAuthOptions.SectionName);
-    //         options.Url = section["Url"] ?? string.Empty;
-    //         options.Key = section["Key"] ?? string.Empty;
-    //         options.DiscoveryUrl = section["DiscoveryUrl"] ?? string.Empty;
-    //     }
-    // }
 }

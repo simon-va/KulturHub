@@ -5,8 +5,8 @@ Isolierte Tests für Handler, Validatoren und Domänenregeln.
 ## Test-Stack
 
 - **xUnit** als Test-Runner
-- **Moq** für Repository- und Service-Stubs (z. B. `IAuthProvider`,
-  `TimeProvider`)
+- **Moq** für Interface-Stubs (z. B. `IInvitationCodeGenerator`,
+  `TimeProvider`, später `IAuthProvider`)
 - **FluentAssertions** für lesbare Asserts
 - **EF Core InMemory-Provider** (`UseInMemoryDatabase`) oder
   **`Microsoft.EntityFrameworkCore.InMemory`** zum Testen des
@@ -20,11 +20,12 @@ Isolierte Tests für Handler, Validatoren und Domänenregeln.
 
 ```
 KulturHub.UnitTests/
-└── Features/
-    └── <Bereich>/
-        └── <UseCase>/
-            └── <Handler>Tests.cs
-            └── <Request>ValidatorTests.cs
+├── Features/
+│   └── <Bereich>/                   # Domain / Application / Api / Infrastructure
+│       └── <UseCase>/
+│           ├── <Handler>Tests.cs
+│           └── <Request>ValidatorTests.cs       ← nur wenn Validator existiert
+└── TestHelpers/                     # projektweite Mocks und Factories
 ```
 
 - Pro Handler eine eigene Testklasse: `<HandlerName>Tests.cs`.
@@ -70,6 +71,67 @@ public async Task Handle_WhenRequestIsValid_ShouldCreateOrganisation()
 }
 ```
 
+## Test-Fixtures und Mocks
+
+- Test-Daten und -Mocks liegen im jeweiligen Testordner oder in einer
+  `TestHelpers/`-Klasse, wenn sie projektweit geteilt werden.
+- `Mock.Of<T>()` für einfache Stubs, `new Mock<T>()` für Assertions
+  auf Interaktionen.
+- `TimeProvider` wird mit `FakeTimeProvider` aus
+  `Microsoft.Extensions.TimeProvider.Testing` für deterministische
+  Zeitstempel verwendet.
+
+### Ports mocken statt Konstruktor-Tricks
+
+Wenn der Handler einen **Port** injiziert bekommt (z. B.
+`IInvitationCodeGenerator`), wird der Test den Port per Moq
+stubben — **nicht** den Konstruktor des Handlers per Reflection oder
+`InternalsVisibleTo` öffnen.
+
+```csharp
+var queue = new Queue<string>(new[] { "AAA-BCD", "DEF-GHJ" });
+var generator = new Mock<IInvitationCodeGenerator>();
+generator.Setup(g => g.Generate())
+         .Returns(() => queue.Count > 0 ? queue.Dequeue() : throw new InvalidOperationException("Generator exhausted."));
+```
+
+Wenn die Sequenz erschöpft ist, schlägt der Test mit einer klaren
+Exception fehl (statt ungewollt mit `string.Empty` zu arbeiten).
+So werden Endlos-Loops in der Implementierung früh sichtbar.
+
+### Test-Helfer `CreateSut` mit Sequenz-Input
+
+Einheitliches Muster für Handler mit geseeded Daten und gestubbten
+Ports:
+
+```csharp
+private static (THandler Sut, TDbContext Db, Mock<TPort> Port) CreateSut(
+    IEnumerable<string> codesToReturn,
+    IEnumerable<DomainEntity> seed)
+{
+    var db = TestDbContextFactory.CreateInMemory();
+    db.AddRange(seed);
+    db.SaveChanges();
+
+    var queue = new Queue<string>(codesToReturn);
+    var port = new Mock<TPort>();
+    port.Setup(p => p.Generate()).Returns(() => /* queue or throw */);
+
+    var handler = new THandler(db, port.Object, /* ... */);
+    return (handler, db, port);
+}
+```
+
+**Ein** `CreateSut`-Helfer pro Testklasse. Keine zwei Varianten für
+„String" und „Queue"; `IEnumerable<string>` deckt beide Fälle ab.
+
+### Seed-Daten konsistent speichern
+
+`db.AddRange(seed); db.SaveChanges();` einmal im `CreateSut` reicht.
+Im Test selbst **kein** weiteres `SaveChangesAsync` — die Daten sind
+schon persistiert. Das verhindert Inkonsistenzen zwischen Tests, die
+synchron `SaveChanges()` und welche, die `SaveChangesAsync()` aufrufen.
+
 ## EF Core in Tests
 
 - Pro Test eine eigene In-Memory-Datenbank mit eindeutigem Namen
@@ -81,6 +143,9 @@ public async Task Handle_WhenRequestIsValid_ShouldCreateOrganisation()
   angewandt – das ist erwünscht, weil es die Produktionslogik spiegelt.
 - Wenn `IgnoreQueryFilters()`-Pfade getestet werden, ist das im
   Testnamen explizit zu kennzeichnen.
+- In-Memory-Provider **kennt keine Unique-Constraints** — Tests, die
+  den `DbUpdateException`-Retry-Pfad absichern, müssen gegen eine
+  echte Postgres-Instanz laufen (Integrationstest, separate Suite).
 
 ## Validierungs-Tests
 
@@ -88,20 +153,20 @@ public async Task Handle_WhenRequestIsValid_ShouldCreateOrganisation()
   getestet – ohne HTTP.
 - Assert über `TestValidationResult`-Helfer von FluentValidation oder
   direkt über `result.IsValid` und `result.Errors`.
-
-## Test-Fixtures und Mocks
-
-- Test-Daten und -Mocks liegen im jeweiligen Testordner oder in einer
-  `TestData/`-Klasse im selben Bereich, wenn sie geteilt werden.
-- `Mock.Of<T>()` für einfache Stubs, `new Mock<T>()` für Assertions
-  auf Interaktionen (selten nötig).
-- `TimeProvider` wird mit `FakeTimeProvider` aus
-  `Microsoft.Extensions.TimeProvider.Testing` für deterministische
-  Zeitstempel verwendet.
+- Wenn ein Endpoint **keinen Validator hat**, gibt es auch keinen
+  `<Request>ValidatorTests.cs`. Endlosschleife-Check: stellt sicher,
+  dass ein versehentlich angelegter Validator auch wirklich
+  ausgeführt wird.
 
 ## Was hier **nicht** hineingehört
 
-- Keine echte Datenbankverbindung
+- Keine echte Datenbankverbindung (Ausnahme: dedizierter
+  Integrationstest für DB-spezifische Features wie Constraints)
 - Keine HTTP-Tests (separates Integration-Test-Projekt, nicht Teil
   dieser Anleitung)
 - Keine produktiven `appsettings.json`-Werte
+- Keine Reflection-Tricks oder `InternalsVisibleTo`-Konstrukte — wenn
+  Test-Determinismus nötig ist, wird ein Port-Interface gemockt
+- Keine leeren `Request`-Tests, wenn der Handler keinen Request nimmt
+- Keine zwei parallelen `CreateSut`-Helfer (z. B. „String" vs.
+  „Queue") — eine Helper-Methode pro Testklasse reicht

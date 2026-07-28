@@ -1,0 +1,2 @@
+### Admin: create invitation code
+POST {{baseUrl}}/admin/invitations
