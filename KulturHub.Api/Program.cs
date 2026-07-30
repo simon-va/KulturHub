@@ -40,6 +40,7 @@ app.UseAuthorization();
 app.MapHealthEndpoints();
 app.MapInvitationEndpoints();
 app.MapAuthEndpoints();
+app.MapUserEndpoints();
 app.MapOrganisationEndpoints();
 app.MapMembershipEndpoints();
 

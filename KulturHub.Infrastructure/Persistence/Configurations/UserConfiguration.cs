@@ -40,6 +40,19 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasColumnName("created_at")
             .IsRequired();
 
+        builder.Property(x => x.IsDeleted)
+            .HasColumnName("is_deleted")
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
+
         builder.HasIndex(x => x.Email).IsUnique();
+
+        builder.HasIndex(x => x.IsDeleted)
+            .HasDatabaseName("IX_users_is_deleted");
+
+        builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }

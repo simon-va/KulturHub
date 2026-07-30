@@ -15,7 +15,9 @@ public sealed class User
         string firstName,
         string lastName,
         bool isAdmin,
-        DateTime createdAt)
+        DateTime createdAt,
+        bool isDeleted,
+        DateTime? deletedAt)
     {
         Id = id;
         Email = email;
@@ -23,6 +25,8 @@ public sealed class User
         LastName = lastName;
         IsAdmin = isAdmin;
         CreatedAt = createdAt;
+        IsDeleted = isDeleted;
+        DeletedAt = deletedAt;
     }
 
     public UserId Id { get; }
@@ -31,6 +35,8 @@ public sealed class User
     public string LastName { get; }
     public bool IsAdmin { get; }
     public DateTime CreatedAt { get; }
+    public bool IsDeleted { get; private set; }
+    public DateTime? DeletedAt { get; private set; }
 
     public static ErrorOr<User> Create(
         UserId id,
@@ -65,6 +71,28 @@ public sealed class User
         if (createdAt.Kind != DateTimeKind.Utc)
             return UserValidationErrors.CreatedAtMustBeUtc;
 
-        return new User(id, trimmedEmail, trimmedFirstName, trimmedLastName, isAdmin, createdAt);
+        return new User(
+            id,
+            trimmedEmail,
+            trimmedFirstName,
+            trimmedLastName,
+            isAdmin,
+            createdAt,
+            isDeleted: false,
+            deletedAt: null);
+    }
+
+    public ErrorOr<Success> Delete(TimeProvider clock)
+    {
+        if (IsDeleted)
+            return Result.Success;
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        if (now.Kind != DateTimeKind.Utc)
+            return UserValidationErrors.DeletedAtMustBeUtc;
+
+        IsDeleted = true;
+        DeletedAt = now;
+        return Result.Success;
     }
 }

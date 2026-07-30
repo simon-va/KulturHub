@@ -2,7 +2,7 @@
 
 Diese Datei dient zur besseren Planung von neuen Funktionen:
 
-## User-Story
+## User-Story — Membership löschen
 
 Als Nutzer
 möchte ich ein Membership löschen können
@@ -25,3 +25,113 @@ um die Liste der berechtigten Personen aktuell zu halten
 - Bestehende MembershipResponse/InviteMembershipResponse bleiben unverändert — DeletedAt ist eine interne Metrik und wird nicht nach außen gegeben
 - Migration: deleted_at neu (nullable) + Index auf (org_id, user_id, deleted_at)
 - Bestehende Tests, Handler, Configurations, Responses entsprechend anpassen
+
+## User-Story — Eigene Stammdaten abfragen / Soft-Delete am User-Aggregat
+
+Als angemeldeter Nutzer
+möchte ich meine eigenen Stammdaten abfragen können
+um im Frontend Profil, Header und Account-Einstellungen rendern zu können,
+ohne jeden Wert einzeln aus dem JWT-Claim ableiten zu müssen.
+
+### Voraussetzung — Soft-Delete am User-Aggregat
+
+`User` trägt heute noch keine Soft-Delete-Felder, obwohl alle anderen
+veränderlichen Entities (Membership, Organisation, Invitation, ChangeLog)
+bereits nach dem Muster der `Domain-instructions.md` mit
+`IsDeleted`/`DeletedAt` und Global Query Filter ausgestattet sind.
+Wir ergänzen diesen Drift im selben Schritt, damit die
+404-Regel für gelöschte User sauber greift.
+
+### Akzeptanzkriterien — Soft-Delete-Substanz
+
+- Domain: `KulturHub.Domain/Users/User.cs`
+  - Privater Konstruktor nimmt zusätzlich `bool isDeleted, DateTime? deletedAt`
+  - Neue Felder `public bool IsDeleted { get; private set; }`,
+    `public DateTime? DeletedAt { get; private set; }`
+  - `Create(...)` Factory setzt `isDeleted: false, deletedAt: null`
+  - Neue Methode `Delete(TimeProvider clock)` analog zu `Membership.Delete`:
+    UTC-Check, `IsDeleted = true`, `DeletedAt = now`,
+    gibt `ErrorOr<Success>` zurück
+  - Signatur von `Create(...)` bleibt unverändert (kein Bruch der Aufrufer)
+- Configuration: `KulturHub.Infrastructure/Persistence/Configurations/UserConfiguration.cs`
+  - `IsDeleted` → `is_deleted` (boolean, NOT NULL, Default `false`)
+  - `DeletedAt` → `deleted_at` (timestamp with time zone, nullable)
+  - `builder.HasQueryFilter(x => !x.IsDeleted)`
+- Migration `AddUserSoftDelete`:
+  - `AddColumn is_deleted boolean NOT NULL DEFAULT FALSE` (Backfill implizit über Default)
+  - `AddColumn deleted_at timestamp with time zone NULL`
+  - `CreateIndex IX_users_is_deleted ON users (is_deleted)`
+- `SignUp`-Tests und alle bestehenden User-Aufrufer bleiben grün (Default-Werte
+  stellen kompatibles Verhalten sicher)
+- Folge-Story „User-Account endgültig löschen" (DB-Soft-Delete + Supabase-Disable
+  + Last-Active-Member-Check, analog Membership-Delete) wird bewusst
+  **zurückgestellt** und nicht in dieser Story mit verbaut
+
+### Akzeptanzkriterien — GET /users/me
+
+- Neuer Endpunkt: `GET /users/me` (Platform-Bereich, OpenAPI-Gruppe `platform`, Tag `Users`)
+- `RequireAuthorization()` → 401 bei fehlendem/ungültigem JWT
+- Identität ausschließlich aus JWT-`sub` (keine UserId aus Query/Body)
+- Antwort `200 OK` mit `MeResponse { UserId, FirstName, LastName, Email, CreatedAt }`
+- `UserId` als `Guid` (wie SignInResponse), `CreatedAt` UTC `DateTime`
+- Keine weiteren Felder (`IsAdmin`, Tokens, Passwörter)
+- 404 `code = "User.NotFound"` wenn User soft-gelöscht ist
+  (`deleted_at IS NOT NULL` per Global Query Filter, JWT kann noch gültig sein)
+- 404 auch wenn der User in der DB komplett fehlt (Edge Case, gleiche Antwort)
+- Idempotent: zweiter Aufruf liefert identische Daten, kein Logging-Spam
+- Kein Change-Log-Eintrag (Read-only)
+
+### Anpassungen Application-Layer
+
+- `IUserReader.cs`: neue Methode `Task<User?> GetByIdAsync(UserId id, CancellationToken ct)`
+- `Application/Errors/UserErrors.cs` (neu oder erweitert):
+  - `NotFound` → `Error.NotFound("User.NotFound", "...")`
+- `Application/Features/Platform/Users/GetCurrentUser/`:
+  - `MeResponse.cs` — `record MeResponse(Guid UserId, string FirstName, string LastName, string Email, DateTime CreatedAt)`
+  - `GetCurrentUserHandler.cs` — `HandleAsync(Guid userId, CancellationToken)` →
+    `ErrorOr<MeResponse>`; liest via `IUserReader.GetByIdAsync`, mappt,
+    `null` → `UserErrors.NotFound`
+
+### Anpassungen Infrastructure-Layer
+
+- `UserReader.cs`: `GetByIdAsync` per
+  `db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id)`;
+  Global Query Filter respektieren → soft-deleted = `null` → 404
+
+### Anpassungen Api-Layer
+
+- Neue Datei `KulturHub.Api/Endpoints/Platform/UserEndpoints.cs`
+- `MapGroup("/users")` einmalig:
+  `.WithTags("Users").WithGroupName("platform").RequireAuthorization()`
+- `GET /me` → `WithName("Users_GetMe")`,
+  `.Produces<MeResponse>(200)`, `.ProducesProblem(401)`, `.ProducesProblem(404)`
+- DI-Parameter mit `[FromServices]`, kein Body → kein `ValidationFilter`
+- `app.MapUserEndpoints()` in `Program.cs` registrieren
+
+### HTTP-Beispiel
+
+`KulturHub.Api/http/platform/users/get-me.http`:
+
+```http
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+```
+
+### Tests
+
+`KulturHub.UnitTests/Features/Application/Platform/Users/GetCurrentUser/GetCurrentUserHandlerTests.cs`:
+
+- `Handle_WhenUserExists_ShouldReturnMeResponse`
+- `Handle_WhenUserIsSoftDeleted_ShouldReturnNotFound`
+- `Handle_WhenUserDoesNotExistInDb_ShouldReturnNotFound`
+- `Handle_PassesCancellationTokenToReader`
+
+`Mock<IUserReader>` mit `Mock.Of<TimeProvider>()` falls später `User.Delete`
+in Tests gebraucht wird.
+
+### Doku
+
+- `README.md` Abschnitt 12: Eintrag „`GET /users/me` – aktueller Nutzer"
+  unter Plattform-API
+- Diese User-Story ist die kanonische Quelle für beide Sub-Bereiche
+  (Soft-Delete-Substanz + Read-Endpunkt)

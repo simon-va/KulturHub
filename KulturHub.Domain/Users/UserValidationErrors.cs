@@ -24,4 +24,7 @@ internal static class UserValidationErrors
 
     public static readonly Error CreatedAtMustBeUtc =
         Error.Validation("User.CreatedAtMustBeUtc", "CreatedAt must be UTC.");
+
+    public static readonly Error DeletedAtMustBeUtc =
+        Error.Validation("User.DeletedAtMustBeUtc", "DeletedAt must be UTC.");
 }

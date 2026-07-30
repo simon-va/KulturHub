@@ -9,6 +9,7 @@ using KulturHub.Application.Features.Platform.Organisations.ListMyOrganisations;
 using KulturHub.Application.Features.Platform.Organisations.UpdateOrganisation;
 using KulturHub.Application.Features.Public.Auth.SignUp;
 using KulturHub.Application.Features.Public.Auth.ValidateInvitation;
+using KulturHub.Application.Features.Platform.Users.GetCurrentUser;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KulturHub.Application;
@@ -28,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<ListMembershipsHandler>();
         services.AddScoped<InviteMembershipHandler>();
         services.AddScoped<DeleteMembershipHandler>();
+        services.AddScoped<GetCurrentUserHandler>();
 
         return services;
     }
