@@ -30,6 +30,7 @@ public sealed class GetCurrentUserHandler(
             user.FirstName,
             user.LastName,
             user.Email,
+            user.IsAdmin,
             user.CreatedAt);
     }
 }

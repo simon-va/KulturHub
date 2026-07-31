@@ -31,8 +31,8 @@ public class GetCurrentUserHandlerTests
         return (handler, db);
     }
 
-    private static User CreateUser(string firstName, string lastName, string email) =>
-        User.Create(UserId.From(UserIdValue), email, firstName, lastName, new FakeTimeProvider(NowUtc)).Value;
+    private static User CreateUser(string firstName, string lastName, string email, bool isAdmin = false) =>
+        User.Create(UserId.From(UserIdValue), email, firstName, lastName, new FakeTimeProvider(NowUtc), isAdmin).Value;
 
     [Fact]
     public async Task Handle_WhenUserExists_ShouldReturnMeResponse()
@@ -48,6 +48,7 @@ public class GetCurrentUserHandlerTests
         response.FirstName.Should().Be("Max");
         response.LastName.Should().Be("Mustermann");
         response.Email.Should().Be("max@example.com");
+        response.IsAdmin.Should().BeFalse();
         response.CreatedAt.Should().Be(NowUtc);
     }
 
@@ -78,6 +79,18 @@ public class GetCurrentUserHandlerTests
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.NotFound);
         result.FirstError.Code.Should().Be("User.NotFound");
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserIsAdmin_ShouldReturnIsAdminTrue()
+    {
+        var user = CreateUser("Max", "Mustermann", "max@example.com", isAdmin: true);
+        var (sut, _) = CreateSut(user);
+
+        var result = await sut.HandleAsync(UserIdValue, CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+        result.Value.IsAdmin.Should().BeTrue();
     }
 
     [Fact]

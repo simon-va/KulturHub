@@ -1,0 +1,16 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kulturhub-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: ${SUPABASE_DB_CONNECTION_STRING}
+      Supabase__Url: ${SUPABASE_URL}
+      Supabase__Key: ${SUPABASE_KEY}
+      Supabase__DiscoveryUrl: ${SUPABASE_DISCOVERY_URL}
+    ports:
+      - "8080:8080"

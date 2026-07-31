@@ -39,27 +39,27 @@ public class CreateInvitationHandlerTests
     [Fact]
     public async Task Handle_ShouldCreateInvitationWith30DayExpiry()
     {
-        var (sut, db, _) = CreateSut(["ABC-234"], []);
+        var (sut, db, _) = CreateSut(["AB23"], []);
 
         var result = await sut.HandleAsync(CancellationToken.None);
 
         result.IsError.Should().BeFalse();
         result.Value.CreatedAt.Should().Be(NowUtc);
         result.Value.ExpiresAt.Should().Be(NowUtc.AddDays(30));
-        result.Value.Code.Should().Be("ABC-234");
+        result.Value.Code.Should().Be("AB23");
         db.Invitations.Count().Should().Be(1);
     }
 
     [Fact]
     public async Task Handle_WhenCodeAlreadyExists_ShouldGenerateDifferentCode()
     {
-        var existing = Invitation.Create("AAA-BCD", NowUtc, NowUtc.AddDays(1)).Value;
-        var (sut, db, _) = CreateSut(["AAA-BCD", "DEF-GHJ"], [existing]);
+        var existing = Invitation.Create("AAAB", NowUtc, NowUtc.AddDays(1)).Value;
+        var (sut, db, _) = CreateSut(["AAAB", "DEFG"], [existing]);
 
         var result = await sut.HandleAsync(CancellationToken.None);
 
         result.IsError.Should().BeFalse();
-        result.Value.Code.Should().Be("DEF-GHJ");
+        result.Value.Code.Should().Be("DEFG");
         db.Invitations.Count().Should().Be(2);
     }
 
@@ -68,15 +68,15 @@ public class CreateInvitationHandlerTests
     {
         var seed = new[]
         {
-            Invitation.Create("AAA-BCD", NowUtc, NowUtc.AddDays(1)).Value,
-            Invitation.Create("DEF-GHJ", NowUtc, NowUtc.AddDays(1)).Value,
-            Invitation.Create("KLM-NPR", NowUtc, NowUtc.AddDays(1)).Value,
-            Invitation.Create("STU-VWX", NowUtc, NowUtc.AddDays(1)).Value,
-            Invitation.Create("YZA-BCD", NowUtc, NowUtc.AddDays(1)).Value,
+            Invitation.Create("AAAB", NowUtc, NowUtc.AddDays(1)).Value,
+            Invitation.Create("DEFG", NowUtc, NowUtc.AddDays(1)).Value,
+            Invitation.Create("KLMN", NowUtc, NowUtc.AddDays(1)).Value,
+            Invitation.Create("STUV", NowUtc, NowUtc.AddDays(1)).Value,
+            Invitation.Create("YZAB", NowUtc, NowUtc.AddDays(1)).Value,
         };
 
         var (sut, db, _) = CreateSut(
-            ["AAA-BCD", "DEF-GHJ", "KLM-NPR", "STU-VWX", "YZA-BCD"],
+            ["AAAB", "DEFG", "KLMN", "STUV", "YZAB"],
             seed);
 
         var result = await sut.HandleAsync(CancellationToken.None);

@@ -123,7 +123,7 @@ wird der Port per Moq gestubbt — **nicht** der Konstruktor des
 Handlers per Reflection oder `InternalsVisibleTo` geöffnet.
 
 ```csharp
-var queue = new Queue<string>(new[] { "AAA-BCD", "DEF-GHJ" });
+var queue = new Queue<string>(new[] { "AAAB", "DEFG" });
 var generator = new Mock<IInvitationCodeGenerator>();
 generator.Setup(g => g.Generate())
          .Returns(() => queue.Count > 0 ? queue.Dequeue() : throw new InvalidOperationException("Generator exhausted."));

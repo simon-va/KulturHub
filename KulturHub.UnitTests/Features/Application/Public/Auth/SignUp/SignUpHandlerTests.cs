@@ -27,7 +27,7 @@ public class SignUpHandlerTests
         Password: "Sicher123!",
         FirstName: "Max",
         LastName: "Mustermann",
-        InvitationCode: "ABC-234");
+        InvitationCode: "AB23");
 
     private static (
         SignUpHandler Sut,
@@ -71,7 +71,7 @@ public class SignUpHandlerTests
         return (handler, db, auth, admin);
     }
 
-    private static Invitation CreateValidInvitation(string code = "ABC-234") =>
+    private static Invitation CreateValidInvitation(string code = "AB23") =>
         Invitation.Create(code, NowUtc.AddDays(-1), NowUtc.AddDays(7)).Value;
 
     [Fact]
@@ -96,7 +96,7 @@ public class SignUpHandlerTests
         user.Email.Should().Be("max@example.com");
         user.IsAdmin.Should().BeFalse();
 
-        var storedInvitation = db.Invitations.Single(i => i.Code == "ABC-234");
+        var storedInvitation = db.Invitations.Single(i => i.Code == "AB23");
         storedInvitation.IsUsed.Should().BeTrue();
         storedInvitation.UsedBy.Should().Be(user.Id.Value);
 
@@ -137,7 +137,7 @@ public class SignUpHandlerTests
     [Fact]
     public async Task Handle_WhenInvitationExpired_ShouldReturnConflict_AndNotCallSupabase()
     {
-        var expired = Invitation.Create("ABC-234", NowUtc.AddDays(-10), NowUtc.AddSeconds(-1)).Value;
+        var expired = Invitation.Create("AB23", NowUtc.AddDays(-10), NowUtc.AddSeconds(-1)).Value;
         var (sut, db, auth, _) = CreateSut(seedInvitation: expired);
 
         var result = await sut.HandleAsync(ValidRequest(), CancellationToken.None);

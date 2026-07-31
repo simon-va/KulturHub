@@ -18,7 +18,7 @@ public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitatio
 
         builder.Property(x => x.Code)
             .HasColumnName("code")
-            .HasMaxLength(7)
+            .HasMaxLength(4)
             .IsRequired();
 
         builder.Property(x => x.CreatedAt)

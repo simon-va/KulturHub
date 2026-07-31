@@ -7,5 +7,5 @@ Content-Type: application/json
   "password": "Sicher123!",
   "firstName": "Anna",
   "lastName": "Mustermann",
-  "invitationCode": "M6N-R72"
+  "invitationCode": "M6NR"
 }

@@ -5,4 +5,5 @@ public sealed record MeResponse(
     string FirstName,
     string LastName,
     string Email,
+    bool IsAdmin,
     DateTime CreatedAt);

@@ -14,7 +14,7 @@ public class ValidateInvitationHandlerTests
 {
     private static readonly DateTime NowUtc = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
 
-    private static ValidateInvitationRequest ValidRequest(string code = "ABC-234") =>
+    private static ValidateInvitationRequest ValidRequest(string code = "AB23") =>
         new(InvitationCode: code);
 
     private static (ValidateInvitationHandler Sut, AppDbContext Db) CreateSut(
@@ -33,7 +33,7 @@ public class ValidateInvitationHandlerTests
         return (handler, db);
     }
 
-    private static Invitation CreateValidInvitation(string code = "ABC-234") =>
+    private static Invitation CreateValidInvitation(string code = "AB23") =>
         Invitation.Create(code, NowUtc.AddDays(-1), NowUtc.AddDays(7)).Value;
 
     [Fact]
@@ -80,7 +80,7 @@ public class ValidateInvitationHandlerTests
     [Fact]
     public async Task Handle_WhenInvitationExpired_ShouldReturnConflict()
     {
-        var expired = Invitation.Create("ABC-234", NowUtc.AddDays(-10), NowUtc.AddSeconds(-1)).Value;
+        var expired = Invitation.Create("AB23", NowUtc.AddDays(-10), NowUtc.AddSeconds(-1)).Value;
         var (sut, db) = CreateSut(seedInvitation: expired);
 
         var result = await sut.HandleAsync(ValidRequest(), CancellationToken.None);

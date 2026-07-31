@@ -10,6 +10,6 @@ public sealed class ValidateInvitationRequestValidator : AbstractValidator<Valid
         RuleFor(x => x.InvitationCode)
             .NotEmpty()
             .Matches(InvitationCodeSpecs.Pattern)
-            .WithMessage("Invitation code must match the format 'XXX-XXX' using A-Z (without I and O) and 2-9.");
+            .WithMessage("Invitation code must match the format 'XXXX' using A-Z (without I and O) and 2-9.");
     }
 }

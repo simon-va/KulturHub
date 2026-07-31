@@ -9,7 +9,7 @@ internal static class InvitationValidationErrors
 
     public static readonly Error InvalidFormat =
         Error.Validation("Invitation.InvalidFormat",
-            "Code must match the format 'XXX-XXX' using A-Z (without I and O) and 2-9.");
+            "Code must match the format 'XXXX' using A-Z (without I and O) and 2-9.");
 
     public static readonly Error CreatedAtMustBeUtc =
         Error.Validation("Invitation.CreatedAtMustBeUtc", "CreatedAt must be UTC.");
