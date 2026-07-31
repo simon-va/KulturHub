@@ -34,8 +34,11 @@ public class ListMyOrganisationsHandlerTests
     private static Organisation CreateOrganisation(string name) =>
         Organisation.Create(name, new FakeTimeProvider(NowUtc)).Value;
 
-    private static Membership CreateMembership(Guid userId, Organisation organisation) =>
-        Membership.Create(UserId.From(userId), organisation.Id, MembershipStatus.Pending, new FakeTimeProvider(NowUtc)).Value;
+    private static Membership CreateMembership(
+        Guid userId,
+        Organisation organisation,
+        MembershipStatus status = MembershipStatus.Accepted) =>
+        Membership.Create(UserId.From(userId), organisation.Id, status, new FakeTimeProvider(NowUtc)).Value;
 
     [Fact]
     public async Task Handle_WhenUserIsMemberOfMultipleOrganisations_ShouldReturnAllSortedByName()
@@ -132,5 +135,64 @@ public class ListMyOrganisationsHandlerTests
         result.IsError.Should().BeFalse();
         result.Value.Should().HaveCount(1);
         result.Value.Single().Id.Should().Be(active.Id.Value);
+    }
+
+    [Fact]
+    public async Task Handle_WhenMembershipIsPending_ShouldExcludeOrganisation()
+    {
+        var active = CreateOrganisation("Active");
+        var pending = CreateOrganisation("Pending");
+        var memberships = new[]
+        {
+            CreateMembership(CurrentUserId, active, MembershipStatus.Accepted),
+            CreateMembership(CurrentUserId, pending, MembershipStatus.Pending),
+        };
+        var (sut, _) = CreateSut([active, pending], memberships);
+
+        var result = await sut.HandleAsync(CurrentUserId, CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+        result.Value.Should().HaveCount(1);
+        result.Value.Single().Id.Should().Be(active.Id.Value);
+    }
+
+    [Fact]
+    public async Task Handle_WhenMembershipIsRejected_ShouldExcludeOrganisation()
+    {
+        var active = CreateOrganisation("Active");
+        var rejected = CreateOrganisation("Rejected");
+        var memberships = new[]
+        {
+            CreateMembership(CurrentUserId, active, MembershipStatus.Accepted),
+            CreateMembership(CurrentUserId, rejected, MembershipStatus.Rejected),
+        };
+        var (sut, _) = CreateSut([active, rejected], memberships);
+
+        var result = await sut.HandleAsync(CurrentUserId, CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+        result.Value.Should().HaveCount(1);
+        result.Value.Single().Id.Should().Be(active.Id.Value);
+    }
+
+    [Fact]
+    public async Task Handle_WhenMembershipsHaveMixedStatuses_ShouldReturnOnlyAccepted()
+    {
+        var alpha = CreateOrganisation("Alpha");
+        var bravo = CreateOrganisation("Bravo");
+        var charlie = CreateOrganisation("Charlie");
+        var memberships = new[]
+        {
+            CreateMembership(CurrentUserId, alpha, MembershipStatus.Accepted),
+            CreateMembership(CurrentUserId, bravo, MembershipStatus.Pending),
+            CreateMembership(CurrentUserId, charlie, MembershipStatus.Rejected),
+        };
+        var (sut, _) = CreateSut([alpha, bravo, charlie], memberships);
+
+        var result = await sut.HandleAsync(CurrentUserId, CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+        result.Value.Should().HaveCount(1);
+        result.Value.Single().Name.Should().Be("Alpha");
     }
 }

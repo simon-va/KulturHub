@@ -1,5 +1,6 @@
 using ErrorOr;
 using KulturHub.Application.Abstractions.Persistence;
+using KulturHub.Domain.Memberships;
 using KulturHub.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -16,7 +17,8 @@ public sealed class ListMyOrganisationsHandler(
     {
         var organisations = await db.Memberships
             .AsNoTracking()
-            .Where(m => m.UserId == UserId.From(userId))
+            .Where(m => m.UserId == UserId.From(userId)
+                && m.Status == MembershipStatus.Accepted)
             .Join(
                 db.Organisations.AsNoTracking(),
                 m => m.OrganisationId,
