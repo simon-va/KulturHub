@@ -38,7 +38,7 @@ public class ListMyOrganisationsHandlerTests
         Membership.Create(UserId.From(userId), organisation.Id, MembershipStatus.Pending, new FakeTimeProvider(NowUtc)).Value;
 
     [Fact]
-    public async Task Handle_WhenUserIsMemberOfMultipleOrganisations_ShouldReturnAll()
+    public async Task Handle_WhenUserIsMemberOfMultipleOrganisations_ShouldReturnAllSortedByName()
     {
         var charlieOrg = CreateOrganisation("Charlie");
         var alphaOrg = CreateOrganisation("Alpha");
@@ -56,7 +56,7 @@ public class ListMyOrganisationsHandlerTests
         result.IsError.Should().BeFalse();
         result.Value.Should().HaveCount(3);
         result.Value.Select(o => o.Name)
-            .Should().BeEquivalentTo(new[] { "Charlie", "Alpha", "Bravo" });
+            .Should().BeEquivalentTo(new[] { "Alpha", "Bravo", "Charlie" });
     }
 
     [Fact]

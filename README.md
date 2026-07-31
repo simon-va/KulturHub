@@ -358,3 +358,8 @@ oder JetBrains Rider direkt ausführen.
 Dieses Projekt wird im Kontext des **KiBuU – Kultur in Bocholt und Umgebung**
 gepflegt. Eine Lizenz ist aktuell nicht hinterlegt; bei Interesse an
 Mitwirkung oder Nutzung bitte Kontakt zum KiBuU-Vorstand aufnehmen.
+
+## 14. dotnet für AI Sessions
+
+Falls `dotnet` in der Shell nicht gefunden wird:
+`export PATH="$HOME/.dotnet:$PATH"`

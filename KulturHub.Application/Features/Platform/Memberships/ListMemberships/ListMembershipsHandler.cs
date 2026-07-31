@@ -31,10 +31,14 @@ public sealed class ListMembershipsHandler(
                     m.Status))
             .ToListAsync(cancellationToken);
 
+        var sorted = memberships
+            .OrderBy(m => m.FullName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
         logger.LogInformation(
             "Listed memberships for organisation {OrganisationId}: {Count} found",
-            organisationId, memberships.Count);
+            organisationId, sorted.Count);
 
-        return memberships;
+        return sorted;
     }
 }

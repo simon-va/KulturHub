@@ -24,10 +24,14 @@ public sealed class ListMyOrganisationsHandler(
                 (m, o) => new MyOrganisationResponse(o.Id.Value, o.Name))
             .ToListAsync(cancellationToken);
 
+        var sorted = organisations
+            .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
         logger.LogInformation(
             "Listed organisations for user {UserId}: {Count} found",
-            userId, organisations.Count);
+            userId, sorted.Count);
 
-        return organisations;
+        return sorted;
     }
 }
