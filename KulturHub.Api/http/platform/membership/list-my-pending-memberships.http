@@ -1,0 +1,3 @@
+### List pending memberships for the current user
+GET {{baseUrl}}/memberships/pending
+Authorization: Bearer {{token}}

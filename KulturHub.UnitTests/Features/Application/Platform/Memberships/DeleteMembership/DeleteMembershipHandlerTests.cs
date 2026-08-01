@@ -211,4 +211,83 @@ public class DeleteMembershipHandlerTests
         stored.IsDeleted.Should().BeTrue();
         stored.DeletedAt.Should().Be(LaterUtc);
     }
+
+    [Fact]
+    public async Task Handle_WhenOnlyAcceptedMemberIsPending_ShouldAllowDelete()
+    {
+        var org = CreateOrganisation("Org");
+        var actor = CreateUser(ActorUserId, "Actor", "User", "actor@example.com");
+        var pendingTarget = CreateUser(TargetUserId, "Pending", "Target", "pending@example.com");
+        var actorMembership = CreateMembership(ActorUserId, org, MembershipStatus.Accepted);
+        var pendingMembership = CreateMembership(TargetUserId, org, MembershipStatus.Pending);
+        var (sut, db, _) = CreateSut(
+            [org],
+            [actor, pendingTarget],
+            [actorMembership, pendingMembership],
+            LaterUtc);
+
+        var result = await sut.HandleAsync(
+            ValidCommand(pendingMembership.Id.Value, ActorUserId, org.Id.Value),
+            CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+
+        var stored = db.Memberships.IgnoreQueryFilters().Single(m => m.Id == pendingMembership.Id);
+        stored.IsDeleted.Should().BeTrue();
+        stored.DeletedAt.Should().Be(LaterUtc);
+        db.ChangeLogs.Count().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Handle_WhenOnlyAcceptedMemberIsRejected_ShouldAllowDelete()
+    {
+        var org = CreateOrganisation("Org");
+        var actor = CreateUser(ActorUserId, "Actor", "User", "actor@example.com");
+        var rejectedTarget = CreateUser(TargetUserId, "Rejected", "Target", "rejected@example.com");
+        var actorMembership = CreateMembership(ActorUserId, org, MembershipStatus.Accepted);
+        var rejectedMembership = CreateMembership(TargetUserId, org, MembershipStatus.Rejected);
+        var (sut, db, _) = CreateSut(
+            [org],
+            [actor, rejectedTarget],
+            [actorMembership, rejectedMembership],
+            LaterUtc);
+
+        var result = await sut.HandleAsync(
+            ValidCommand(rejectedMembership.Id.Value, ActorUserId, org.Id.Value),
+            CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+
+        var stored = db.Memberships.IgnoreQueryFilters().Single(m => m.Id == rejectedMembership.Id);
+        stored.IsDeleted.Should().BeTrue();
+        stored.DeletedAt.Should().Be(LaterUtc);
+        db.ChangeLogs.Count().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Handle_WhenMultipleAcceptedMembersAndDeletingPending_ShouldAllowDelete()
+    {
+        var org = CreateOrganisation("Org");
+        var actor = CreateUser(ActorUserId, "Actor", "User", "actor@example.com");
+        var otherAccepted = CreateUser(OtherUserId, "Other", "User", "other@example.com");
+        var pendingTarget = CreateUser(TargetUserId, "Pending", "Target", "pending@example.com");
+        var actorMembership = CreateMembership(ActorUserId, org, MembershipStatus.Accepted);
+        var otherMembership = CreateMembership(OtherUserId, org, MembershipStatus.Accepted);
+        var pendingMembership = CreateMembership(TargetUserId, org, MembershipStatus.Pending);
+        var (sut, db, _) = CreateSut(
+            [org],
+            [actor, otherAccepted, pendingTarget],
+            [actorMembership, otherMembership, pendingMembership],
+            LaterUtc);
+
+        var result = await sut.HandleAsync(
+            ValidCommand(pendingMembership.Id.Value, ActorUserId, org.Id.Value),
+            CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+
+        var stored = db.Memberships.IgnoreQueryFilters().Single(m => m.Id == pendingMembership.Id);
+        stored.IsDeleted.Should().BeTrue();
+        stored.DeletedAt.Should().Be(LaterUtc);
+    }
 }

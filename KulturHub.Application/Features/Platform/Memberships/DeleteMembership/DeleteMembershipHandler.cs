@@ -32,14 +32,17 @@ public sealed class DeleteMembershipHandler(
         if (membership.OrganisationId != organisationId)
             return MembershipErrors.NotFound;
 
-        var activeMemberCount = await db.Memberships
-            .CountAsync(
-                m => m.OrganisationId == organisationId
-                    && m.Status == MembershipStatus.Accepted,
-                cancellationToken);
+        if (membership.Status == MembershipStatus.Accepted)
+        {
+            var activeMemberCount = await db.Memberships
+                .CountAsync(
+                    m => m.OrganisationId == organisationId
+                        && m.Status == MembershipStatus.Accepted,
+                    cancellationToken);
 
-        if (activeMemberCount <= 1)
-            return MembershipErrors.LastActiveMember;
+            if (activeMemberCount <= 1)
+                return MembershipErrors.LastActiveMember;
+        }
 
         var deleteResult = membership.Delete(clock);
         if (deleteResult.IsError)

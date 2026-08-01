@@ -5,6 +5,7 @@ using KulturHub.Application.Features.Platform.Memberships.ChangeMembershipStatus
 using KulturHub.Application.Features.Platform.Memberships.DeleteMembership;
 using KulturHub.Application.Features.Platform.Memberships.InviteMembership;
 using KulturHub.Application.Features.Platform.Memberships.ListMemberships;
+using KulturHub.Application.Features.Platform.Memberships.ListMyPendingMemberships;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KulturHub.Api.Endpoints.Platform;
@@ -119,6 +120,25 @@ public static class MembershipEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status500InternalServerError)
             .WithName("Memberships_Delete");
+
+        app.MapGet("/memberships/pending", async (
+            ClaimsPrincipal user,
+            [FromServices] ListMyPendingMembershipsHandler handler,
+            CancellationToken ct) =>
+        {
+            var result = await handler.HandleAsync(user.GetUserId(), ct);
+
+            return result.Match(
+                response => Results.Json(response, statusCode: StatusCodes.Status200OK),
+                errors => errors.ToResult());
+        })
+            .WithTags("Memberships")
+            .WithGroupName("platform")
+            .RequireAuthorization()
+            .Produces<IReadOnlyList<PendingMembershipResponse>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
+            .WithName("Memberships_ListMyPending");
 
         return app;
     }
