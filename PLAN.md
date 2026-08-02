@@ -135,3 +135,84 @@ in Tests gebraucht wird.
   unter Plattform-API
 - Diese User-Story ist die kanonische Quelle für beide Sub-Bereiche
   (Soft-Delete-Substanz + Read-Endpunkt)
+
+## User-Story — Change-Logs einer Organisation abfragen
+
+Als Nutzer
+möchte ich die Change-Logs einer Organisation paginiert durchsuchen können
+um nachvollziehen zu können, wer wann welche Änderungen vorgenommen hat.
+
+### Akzeptanzkriterien
+
+- Neuer Endpunkt: `GET /organisations/{organisationId:guid}/change-logs`
+  (Platform-Bereich, OpenAPI-Gruppe `platform`, Tag `ChangeLogs`)
+- `RequireAuthorization()` → 401 bei fehlendem/ungültigem JWT
+- `MembershipAuthorizationFilter` → 403 wenn Actor kein akzeptiertes
+  Mitglied der Organisation ist
+- Query-Parameter:
+  - `skip` (int, default `0`, muss `>= 0` sein)
+  - `take` (int, default `50`, muss in `[1, 200]` liegen)
+  - `search` (string, optional, max 500 Zeichen) — case-insensitive Suche
+    auf `message` **und** `CreatedBy.FullName` (FirstName + LastName)
+- Sortierung: `CreatedAt DESC` (jüngste zuerst)
+- Response 200: `PagedResult<ChangeLogResponse>` mit `Items`, `Total`,
+  `Skip`, `Take`
+- `ChangeLogResponse` Felder: `Id`, `CreatedBy` (UserId), `CreatedByFullName`,
+  `Message`, `Data`, `CreatedAt` — **keine** `IsDeleted`/`DeletedAt`-Felder
+- Soft-deleted ChangeLogs (`is_deleted = true`) werden über den globalen
+  Query-Filter der `ChangeLogConfiguration` ausgefiltert
+- Soft-deleted User werden **nicht** ausgefiltert — der FullName soll auch
+  dann aufgelöst werden, wenn der erzeugende User zwischenzeitlich gelöscht
+  wurde (via `IgnoreQueryFilters()` auf dem User-Join)
+- Kein Change-Log-Eintrag (Read-only)
+- Pagination-Wrapper `PagedResult<T>` neu unter
+  `KulturHub.Application/Abstractions/Pagination/PagedResult.cs` etabliert
+- Validation per `ListChangeLogsRequestValidator` (FluentValidation),
+  Ausführung inline im Endpoint, da keine Body-Bindung verfügbar
+  (Query-Param-DTO)
+
+### Anpassungen Application-Layer
+
+- Neue Datei `KulturHub.Application/Abstractions/Pagination/PagedResult.cs`:
+  `record PagedResult<T>(IReadOnlyList<T> Items, int Total, int Skip, int Take)`
+- Neue Datei `KulturHub.Application/Features/Platform/ChangeLogs/ListChangeLogs/`:
+  - `ListChangeLogsRequest.cs` — `record(int Skip, int Take, string? Search)`
+  - `ListChangeLogsRequestValidator.cs` — Skip≥0, Take∈[1,200], Search≤500
+  - `ListChangeLogsCommand.cs` — Bundle `(Guid OrganisationId, int Skip, int Take, string? Search)`
+  - `ChangeLogResponse.cs` — exakte Spalten ohne `IsDeleted`/`DeletedAt`
+  - `ListChangeLogsHandler.cs` — primary constructor mit `IAppDbContext` +
+    `ILogger`, query mit `db.Users.IgnoreQueryFilters()` für FullName-Auflösung
+
+### Anpassungen Api-Layer
+
+- Neue Datei `KulturHub.Api/Endpoints/Platform/ChangeLogEndpoints.cs`:
+  `MapChangeLogEndpoints()` mit `MapGroup("/organisations/{organisationId:guid}/change-logs")`
+  + `MembershipAuthorizationFilter` + Validation inline
+- `app.MapChangeLogEndpoints()` in `Program.cs` registrieren
+- HTTP-Beispiel: `KulturHub.Api/http/platform/changelogs/list-organisation-change-logs.http`
+
+### Tests
+
+`KulturHub.UnitTests/Features/Application/Platform/ChangeLogs/ListChangeLogs/ListChangeLogsHandlerTests.cs`:
+
+- `Handle_WhenNoLogs_ShouldReturnEmptyPagedResult`
+- `Handle_WithMultipleLogs_ShouldReturnOrderedByCreatedAtDescending`
+- `Handle_WithSearch_ShouldMatchInMessage`
+- `Handle_WithSearch_ShouldMatchInActorFirstName`
+- `Handle_WithSearch_ShouldMatchInActorLastName`
+- `Handle_WithSearchWhitespace_ShouldIgnoreSearch`
+- `Handle_WithSkipAndTake_ShouldRespectPagination`
+- `Handle_OnlyReturnsLogsForRequestedOrganisation`
+- `Handle_ExcludesSoftDeletedChangeLogs` (InMemory-Workaround dokumentiert:
+  EF InMemory honoriert `HasQueryFilter` nicht zuverlässig in Verbindung mit
+  `Join`+`Skip`/`Take`. Mechanik wird über `ListMembershipsHandlerTests`
+  gegen den realen Filter und gegen PostgreSQL abgesichert.)
+- `Handle_IncludesLogsFromSoftDeletedUser`
+- `Handle_PassesCancellationTokenToDb`
+- `Handle_ShouldComposeFullNameAndMapResponseFields`
+
+### Doku
+
+- `README.md` Abschnitt 12: Eintrag
+  „`GET /organisations/{id}/change-logs` – Change-Logs einer Organisation
+  abfragen" unter Plattform-API

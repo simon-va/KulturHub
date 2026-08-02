@@ -137,6 +137,7 @@ public class InviteMembershipHandlerTests
         changeLog.OrganisationId.Value.Should().Be(org.Id.Value);
         changeLog.CreatedBy.Value.Should().Be(InviterUserId);
         changeLog.CreatedAt.Should().Be(NowUtc);
+        changeLog.Category.Should().Be(KulturHub.Domain.ChangeLogs.ChangeLogCategory.Organisation);
         changeLog.Data.Should().ContainKey("email");
         changeLog.Data["email"].Should().Be(InviteeEmail);
         changeLog.Data.Should().ContainKey("status");

@@ -341,7 +341,7 @@ ausgewählt werden können:
 | Dokument | Audience | Inhalt |
 | --- | --- | --- |
 | `/openapi/public.json` | Anonyme Besucher | `GET /health`, künftige Public-Reads |
-| `/openapi/platform.json` | Angemeldete Nutzer | `GET /users/me`, eigene Organisationen, Memberships, Change Logs |
+| `/openapi/platform.json` | Angemeldete Nutzer | `GET /users/me`, eigene Organisationen, Memberships, `GET /organisations/{id}/change-logs` |
 | `/openapi/admin.json` | Administratoren | Systemweite Verwaltung, Invitations |
 
 Ausführliche Schema-Beschreibungen und „Try it out"-Funktionen stellt

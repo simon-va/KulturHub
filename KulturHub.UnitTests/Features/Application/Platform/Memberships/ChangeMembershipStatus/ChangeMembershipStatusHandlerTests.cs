@@ -151,6 +151,7 @@ public class ChangeMembershipStatusHandlerTests
         changeLog.OrganisationId.Value.Should().Be(org.Id.Value);
         changeLog.CreatedBy.Value.Should().Be(InviteeUserId);
         changeLog.CreatedAt.Should().Be(LaterUtc);
+        changeLog.Category.Should().Be(KulturHub.Domain.ChangeLogs.ChangeLogCategory.Organisation);
         changeLog.Data["from"].Should().Be("Pending");
         changeLog.Data["to"].Should().Be("Accepted");
     }
@@ -178,6 +179,7 @@ public class ChangeMembershipStatusHandlerTests
         db.ChangeLogs.Count().Should().Be(1);
         var changeLog = db.ChangeLogs.Single();
         changeLog.Message.Should().Be("Einladung abgelehnt");
+        changeLog.Category.Should().Be(KulturHub.Domain.ChangeLogs.ChangeLogCategory.Organisation);
         changeLog.Data["from"].Should().Be("Pending");
         changeLog.Data["to"].Should().Be("Rejected");
     }

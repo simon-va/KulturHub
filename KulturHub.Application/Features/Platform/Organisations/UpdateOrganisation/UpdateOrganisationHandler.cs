@@ -46,6 +46,7 @@ public sealed class UpdateOrganisationHandler(
             OrganisationId.From(organisationId),
             UserId.From(userId),
             "Organisation wurde aktualisiert",
+            ChangeLogCategory.Organisation,
             new Dictionary<string, string?> { ["name"] = request.Name },
             clock);
 

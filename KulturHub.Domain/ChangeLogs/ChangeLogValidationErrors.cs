@@ -23,4 +23,7 @@ internal static class ChangeLogValidationErrors
 
     public static readonly Error CreatedAtMustBeUtc =
         Error.Validation("ChangeLog.CreatedAtMustBeUtc", "CreatedAt must be UTC.");
+
+    public static readonly Error CategoryRequired =
+        Error.Validation("ChangeLog.CategoryRequired", "Category is required.");
 }

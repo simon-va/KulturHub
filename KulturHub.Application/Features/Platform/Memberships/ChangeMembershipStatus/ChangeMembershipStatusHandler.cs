@@ -56,6 +56,7 @@ public sealed class ChangeMembershipStatusHandler(
             command.NewStatus == MembershipChangeStatus.Accepted
                 ? "Einladung angenommen"
                 : "Einladung abgelehnt",
+            ChangeLogCategory.Organisation,
             new Dictionary<string, string?>
             {
                 ["from"] = nameof(MembershipStatus.Pending),

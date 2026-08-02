@@ -45,6 +45,7 @@ public sealed class CreateOrganisationHandler(
             organisation.Id,
             UserId.From(command.UserId),
             "Organisation wurde erstellt",
+            ChangeLogCategory.Organisation,
             new Dictionary<string, string?> { ["name"] = organisation.Name },
             clock);
 

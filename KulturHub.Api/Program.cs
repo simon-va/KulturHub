@@ -43,5 +43,6 @@ app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapOrganisationEndpoints();
 app.MapMembershipEndpoints();
+app.MapChangeLogEndpoints();
 
 app.Run();

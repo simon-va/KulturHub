@@ -61,6 +61,7 @@ public class CreateOrganisationHandlerTests
         changeLog.OrganisationId.Value.Should().Be(result.Value.Id);
         changeLog.CreatedBy.Value.Should().Be(UserId);
         changeLog.CreatedAt.Should().Be(NowUtc);
+        changeLog.Category.Should().Be(KulturHub.Domain.ChangeLogs.ChangeLogCategory.Organisation);
         changeLog.IsDeleted.Should().BeFalse();
         changeLog.Data.Should().ContainKey("name");
         changeLog.Data["name"].Should().Be("Kulturverein Rügen");

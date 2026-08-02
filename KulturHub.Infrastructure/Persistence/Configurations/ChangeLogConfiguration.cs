@@ -41,6 +41,11 @@ public sealed class ChangeLogConfiguration : IEntityTypeConfiguration<ChangeLog>
             .HasMaxLength(ChangeLog.MaxMessageLength)
             .IsRequired();
 
+        builder.Property(x => x.Category)
+            .HasColumnName("category")
+            .HasConversion<short>()
+            .IsRequired();
+
         builder.Property(x => x.Data)
             .HasColumnName("data")
             .HasColumnType("jsonb")

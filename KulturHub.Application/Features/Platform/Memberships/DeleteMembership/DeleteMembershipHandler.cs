@@ -52,6 +52,7 @@ public sealed class DeleteMembershipHandler(
             organisationId,
             actorUserId,
             "Mitglied entfernt",
+            ChangeLogCategory.Organisation,
             new Dictionary<string, string?>
             {
                 ["membershipId"] = membership.Id.Value.ToString(),

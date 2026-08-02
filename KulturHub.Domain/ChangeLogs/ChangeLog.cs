@@ -13,6 +13,7 @@ public sealed class ChangeLog
         OrganisationId organisationId,
         UserId createdBy,
         string message,
+        ChangeLogCategory category,
         IReadOnlyDictionary<string, string?> data,
         DateTime createdAt,
         bool isDeleted,
@@ -22,6 +23,7 @@ public sealed class ChangeLog
         OrganisationId = organisationId;
         CreatedBy = createdBy;
         Message = message;
+        Category = category;
         Data = data;
         CreatedAt = createdAt;
         IsDeleted = isDeleted;
@@ -32,6 +34,7 @@ public sealed class ChangeLog
     public OrganisationId OrganisationId { get; }
     public UserId CreatedBy { get; }
     public string Message { get; }
+    public ChangeLogCategory Category { get; }
     public IReadOnlyDictionary<string, string?> Data { get; }
     public DateTime CreatedAt { get; }
     public bool IsDeleted { get; private set; }
@@ -41,6 +44,7 @@ public sealed class ChangeLog
         OrganisationId organisationId,
         UserId createdBy,
         string message,
+        ChangeLogCategory category,
         IReadOnlyDictionary<string, string?> data,
         TimeProvider clock)
     {
@@ -57,6 +61,9 @@ public sealed class ChangeLog
         if (trimmedMessage.Length > MaxMessageLength)
             return ChangeLogValidationErrors.MessageTooLong;
 
+        if (!Enum.IsDefined(typeof(ChangeLogCategory), category))
+            return ChangeLogValidationErrors.CategoryRequired;
+
         if (data is null)
             return ChangeLogValidationErrors.DataRequired;
 
@@ -69,6 +76,7 @@ public sealed class ChangeLog
             organisationId,
             createdBy,
             trimmedMessage,
+            category,
             data,
             createdAt,
             isDeleted: false,

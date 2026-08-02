@@ -1,0 +1,7 @@
+### List change logs of an organisation
+GET {{baseUrl}}/organisations/{{organisationId}}/change-logs?skip=0&take=50
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/organisations/{{organisationId}}/change-logs?skip=0&take=50&search=Organisation
+Authorization: Bearer {{token}}

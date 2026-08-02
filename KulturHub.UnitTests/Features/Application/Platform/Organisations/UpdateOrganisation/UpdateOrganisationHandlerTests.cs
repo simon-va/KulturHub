@@ -51,6 +51,7 @@ public class UpdateOrganisationHandlerTests
         changeLog.OrganisationId.Value.Should().Be(existing.Id.Value);
         changeLog.CreatedBy.Value.Should().Be(UserId);
         changeLog.CreatedAt.Should().Be(NowUtc);
+        changeLog.Category.Should().Be(KulturHub.Domain.ChangeLogs.ChangeLogCategory.Organisation);
         changeLog.IsDeleted.Should().BeFalse();
         changeLog.Data.Should().ContainKey("name");
         changeLog.Data["name"].Should().Be("Neuer Name");

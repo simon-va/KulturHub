@@ -43,6 +43,7 @@ public sealed class InviteMembershipHandler(
             OrganisationId.From(command.OrganisationId),
             UserId.From(command.InviterUserId),
             "Nutzer wurde eingeladen",
+            ChangeLogCategory.Organisation,
             new Dictionary<string, string?>
             {
                 ["email"] = user.Email,

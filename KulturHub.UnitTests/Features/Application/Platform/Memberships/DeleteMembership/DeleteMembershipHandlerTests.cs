@@ -186,6 +186,7 @@ public class DeleteMembershipHandlerTests
         changeLog.OrganisationId.Value.Should().Be(org.Id.Value);
         changeLog.CreatedBy.Value.Should().Be(ActorUserId);
         changeLog.CreatedAt.Should().Be(LaterUtc);
+        changeLog.Category.Should().Be(KulturHub.Domain.ChangeLogs.ChangeLogCategory.Organisation);
         changeLog.Data["membershipId"].Should().Be(targetMembership.Id.Value.ToString());
         changeLog.Data["userId"].Should().Be(TargetUserId.ToString());
         changeLog.Data["status"].Should().Be("Accepted");
