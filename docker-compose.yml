@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: kulturhub-api
+    container_name: api
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Development
@@ -14,3 +14,10 @@ services:
       Supabase__DiscoveryUrl: ${SUPABASE_DISCOVERY_URL}
     ports:
       - "8080:8080"
+    networks:
+      - kibuu-net
+
+networks:
+  kibuu-net:
+    external: true
+    name: kibuu_kibuu-net
