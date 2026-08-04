@@ -32,8 +32,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseKulturHubExceptionHandler();
-app.UseHttpsRedirection();
 app.UseCors();
+app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 

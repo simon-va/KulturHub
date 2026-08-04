@@ -6,7 +6,7 @@ services:
     container_name: api
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Default: ${SUPABASE_DB_CONNECTION_STRING}
       Supabase__Url: ${SUPABASE_URL}

@@ -254,7 +254,7 @@ Die Anwendung erwartet folgende Konfigurationsabschnitte:
 | `Supabase:Url` | Basis-URL des Supabase-Projekts |
 | `Supabase:Key` | Anonymer Public-Key des Supabase-Projekts |
 | `Supabase:DiscoveryUrl` | OIDC-Discovery-URL von Supabase Auth |
-| `Cors:AllowedOrigins` | Liste erlaubter Frontend-Ursprünge (z. B. `http://localhost:4200`) |
+| `Cors:AllowedOrigins` | Liste erlaubter Frontend-Ursprünge. Dev: `http://localhost:4200` (`appsettings.Development.json`). Prod: `https://kibuu.de`, `https://www.kibuu.de`, `https://api.kibuu.de` (`appsettings.Production.json`). |
 | `Logging` | Standard ASP.NET-Core-Logging |
 
 ### ⚠️ Sicherheitshinweis

@@ -187,9 +187,15 @@ angehängt.
 ## CORS
 
 Erlaubte Origins kommen aus der Konfiguration
-(`Cors:AllowedOrigins`). Standard im Dev ist `http://localhost:4200`
-(Angular) und wird in `appsettings.Development.json` gepflegt — nicht
-im Code.
+(`Cors:AllowedOrigins`) und werden in `appsettings.Development.json`
+bzw. `appsettings.Production.json` pro Umgebung gepflegt — nicht im
+Code.
+
+- Dev: `http://localhost:4200` (Angular)
+- Prod: `https://kibuu.de`, `https://www.kibuu.de`, `https://api.kibuu.de`
+
+In `Program.cs` läuft `UseCors()` **vor** `UseHttpsRedirection()`, damit
+Preflight-OPTIONS-Antworten nicht durch den Redirect verschluckt werden.
 
 ## JSON
 
@@ -202,8 +208,8 @@ Erweiterung dazu.
 
 ```
 UseKulturHubExceptionHandler()  // fängt unbehandelte Exceptions
+UseCors()                       // vor Redirect, damit Preflight-OPTIONS nicht verschluckt werden
 UseHttpsRedirection()
-UseCors()
 UseAuthentication()
 UseAuthorization()
 ```
